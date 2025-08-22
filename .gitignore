@@ -1,0 +1,23 @@
+# Build artifacts
+/dist/
+/build/
+
+# Databases and generated files
+*.db
+*.sqlite
+*.log
+
+# IDE files
+.idea/
+!.idea/codeStyles/
+!.idea/inspectionProfiles/
+!.idea/runConfigurations/
+.idea/workspace.xml
+.idea/tasks.xml
+.idea/shelf/
+.idea/usage.statistics.xml
+.idea/dataSources/
+.idea/httpRequests/
+
+# OS files
+.DS_Store

@@ -1,0 +1,23 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="linux go build service_template" type="GoApplicationRunConfiguration" factoryName="Go Application">
+    <module name="go_service_template" />
+    <working_directory value="$PROJECT_DIR$" />
+    <go_parameters value="-o $ProjectFileDir$/build/linux/service_template" />
+    <envs>
+      <env name="CC" value="x86_64-unknown-linux-gnu-gcc" />
+      <env name="CGO_ENABLED" value="1" />
+      <env name="GOOS" value="linux" />
+      <env name="GOARCH" value="amd64" />
+    </envs>
+    <sudo value="true" />
+    <kind value="FILE" />
+    <package value="scm.dev.dsherwin.net/dsherwin/go_service_template" />
+    <directory value="$PROJECT_DIR$" />
+    <filePath value="$PROJECT_DIR$/cmd/main.go" />
+    <output_directory value="$PROJECT_DIR$/build" />
+    <option name="run" value="false" />
+    <method v="2">
+      <option name="RunConfigurationTask" enabled="true" run_configuration_name="Bump Version" run_configuration_type="ShConfigurationType" />
+    </method>
+  </configuration>
+</component>
