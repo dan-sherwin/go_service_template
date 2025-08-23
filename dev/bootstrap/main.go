@@ -227,37 +227,103 @@ func pick(vals ...string) string {
 
 func updateReadme(cwd, oldModule, newModule, newApp string) {
 	readmePath := filepath.Join(cwd, "README.md")
-	b, err := os.ReadFile(readmePath)
-	if err != nil {
-		return // README might not exist; best-effort
-	}
-	orig := string(b)
-	repl := orig
-
-	oldAppName := filepath.Base(oldModule)
-	if newApp != "" && oldAppName != "" {
-		// Replace occurrences of the old app name with the new app name
-		repl = strings.ReplaceAll(repl, oldAppName, newApp)
-		// Also try a title pattern replacement if present: '# <name> —'
-		reTitle := regexp.MustCompile(`(?m)^#\s*[^\n]*`)
-		repl = reTitle.ReplaceAllStringFunc(repl, func(line string) string {
-			// If the line already contains newApp, keep it; otherwise, replace oldAppName with newApp
-			if strings.Contains(line, newApp) {
-				return line
-			}
-			return strings.ReplaceAll(line, oldAppName, newApp)
-		})
+	if _, err := os.Stat(readmePath); err != nil {
+		// README might not exist; best-effort
+		return
 	}
 
-	if newModule != "" && newModule != oldModule {
-		// Update ldflags import paths shown in README examples
-		repl = strings.ReplaceAll(repl, oldModule+"/cmd/app/consts.Version", newModule+"/cmd/app/consts.Version")
-		repl = strings.ReplaceAll(repl, oldModule+"/cmd/app/consts.Commit", newModule+"/cmd/app/consts.Commit")
-		repl = strings.ReplaceAll(repl, oldModule+"/cmd/app/consts.BuildDate", newModule+"/cmd/app/consts.BuildDate")
+	// Determine effective module path and app name
+	effectiveModule := oldModule
+	if newModule != "" {
+		effectiveModule = newModule
+	}
+	appName := newApp
+	if appName == "" {
+		// Fall back to module basename
+		appName = filepath.Base(effectiveModule)
+		if appName == "" {
+			appName = "app"
+		}
 	}
 
-	if repl != orig {
-		_ = os.WriteFile(readmePath, []byte(repl), 0o644)
+	// Construct a brand new README.md that is specific to the app, with no template mentions
+	ldflagsVersion := effectiveModule + "/cmd/app/consts.Version"
+	ldflagsCommit := effectiveModule + "/cmd/app/consts.Commit"
+	ldflagsBuildDate := effectiveModule + "/cmd/app/consts.BuildDate"
+
+	var b strings.Builder
+	b.WriteString("# ")
+	b.WriteString(appName)
+	b.WriteString(" — Go service with CLI, RPC, HTTP, logging, and systemd integration\n\n")
+
+	b.WriteString("This repository contains the ")
+	b.WriteString(appName)
+	b.WriteString(" service. It provides:\n")
+	b.WriteString("- A CLI using Kong\n")
+	b.WriteString("- A Unix RPC server (net/rpc over a Unix domain socket)\n")
+	b.WriteString("- An HTTP server you can extend with endpoints\n")
+	b.WriteString("- Structured logging with slog (Journald on Linux; Text to stdout on macOS)\n")
+	b.WriteString("- System data sampling (goroutine count, memory, CPU%)\n")
+	b.WriteString("- Systemd integration using takama/daemon\n")
+	b.WriteString("- Settings persistence\n")
+	b.WriteString("- TeamCity CI setup\n\n")
+
+	b.WriteString("## Quick start\n")
+	b.WriteString("Build and run locally:\n\n")
+	b.WriteString("```\n")
+	b.WriteString("go build -o ./dist/")
+	b.WriteString(appName)
+	b.WriteString(" ./cmd\n")
+	b.WriteString("./dist/")
+	b.WriteString(appName)
+	b.WriteString(" run\n")
+	b.WriteString("```\n\n")
+
+	b.WriteString("Linux production build example:\n\n")
+	b.WriteString("```\n")
+	b.WriteString("GOOS=linux GOARCH=amd64 CGO_ENABLED=0 \\\n")
+	b.WriteString("  go build -ldflags \"-X '")
+	b.WriteString(ldflagsVersion)
+	b.WriteString("=0.1.0' -X '")
+	b.WriteString(ldflagsCommit)
+	b.WriteString("=dev' -X '")
+	b.WriteString(ldflagsBuildDate)
+	b.WriteString("=$(date -u +%Y-%m-%dT%H:%M:%SZ)'\" -o ./dist/")
+	b.WriteString(appName)
+	b.WriteString(" ./cmd\n")
+	b.WriteString("```\n\n")
+
+	b.WriteString("The binary exposes a CLI with commands registered under cmd/app/commands. See internal/foo for examples of adding a command and a setting.\n\n")
+
+	b.WriteString("## Logging\n")
+	b.WriteString("- Linux: slog handler writes to journald (see cmd/app/logger_linux.go)\n")
+	b.WriteString("- macOS: slog uses TextHandler to stdout (see cmd/app/logger_darwin.go)\n")
+	b.WriteString("- Standard log keys: app, version, pid, user, component, error\n")
+	b.WriteString("- Set log level via CLI or environment\n\n")
+
+	b.WriteString("## RPC\n")
+	b.WriteString("- Unix domain socket: /var/run/")
+	b.WriteString(appName)
+	b.WriteString(".socket (0660 perms)\n")
+	b.WriteString("- Start server as part of daemon run path; client helpers dial per call and close\n\n")
+
+	b.WriteString("## HTTP\n")
+	b.WriteString("- HTTP server starts after daemon setup; add your endpoints as needed\n")
+	b.WriteString("- Consider adding /healthz and /ready\n\n")
+
+	b.WriteString("## Systemd integration\n")
+	b.WriteString("- Install/remove/start/stop/status via CLI under the Systemd command group\n")
+	b.WriteString("- Uses takama/daemon to register the service\n\n")
+
+	b.WriteString("## Versioning\n")
+	b.WriteString("- Build info is injected via -ldflags into cmd/app/consts (Version, Commit, BuildDate)\n\n")
+
+	b.WriteString("## CI\n")
+	b.WriteString("- .teamcity/settings.kts contains a build that runs go mod tidy, go vet, go test -race, and a Linux/amd64 build with ldflags\n")
+	b.WriteString("- Optional Deploy configuration can use rsync/SSH and systemctl restart; set parameters as needed (dest_user, dest_host, dest_path)\n\n")
+
+	content := b.String()
+	if err := os.WriteFile(readmePath, []byte(content), 0o644); err == nil {
 		fmt.Println("Updated README.md")
 	}
 }
