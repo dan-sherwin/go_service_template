@@ -125,7 +125,10 @@ func main() {
 	// 5) Update README.md with new app/module info
 	updateReadme(cwd, oldModule, *newModule, *newApp)
 
-	// 6) Best-effort: run `go mod tidy` to settle dependencies after rewrite
+	// 6) Update GoLand run configurations under dev/runConfigurations
+	updateRunConfigurations(cwd, oldModule, *newModule, *newApp)
+
+	// 7) Best-effort: run `go mod tidy` to settle dependencies after rewrite
 	if err := runGoModTidy(cwd); err != nil {
 		fmt.Println("Note: go mod tidy failed:", err)
 	}
@@ -325,5 +328,69 @@ func updateReadme(cwd, oldModule, newModule, newApp string) {
 	content := b.String()
 	if err := os.WriteFile(readmePath, []byte(content), 0o644); err == nil {
 		fmt.Println("Updated README.md")
+	}
+}
+
+// updateRunConfigurations updates IntelliJ GoLand runConfigurations to reflect the new module/app names.
+func updateRunConfigurations(cwd, oldModule, newModule, newApp string) {
+	dir := filepath.Join(cwd, "dev", "runConfigurations")
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		// Directory might not exist; nothing to do
+		return
+	}
+
+	// Determine effective values
+	effectiveModule := oldModule
+	if newModule != "" {
+		effectiveModule = newModule
+	}
+	ideaModuleName := filepath.Base(effectiveModule)
+	appName := newApp
+	if appName == "" {
+		appName = ideaModuleName
+		if appName == "" {
+			appName = "app"
+		}
+	}
+
+	reOldPkg := regexp.MustCompile(regexp.QuoteMeta(oldModule))
+
+	for _, e := range entries {
+		if e.IsDir() {
+			continue
+		}
+		name := e.Name()
+		if !strings.HasSuffix(name, ".run.xml") {
+			continue
+		}
+		path := filepath.Join(dir, name)
+		b, err := os.ReadFile(path)
+		if err != nil {
+			continue
+		}
+		orig := string(b)
+		repl := orig
+
+		// 1) Update <module name="..." />
+		repl = regexp.MustCompile(`<module\s+name="[^"]*"\s*/>`).ReplaceAllString(repl, fmt.Sprintf(`<module name="%s" />`, ideaModuleName))
+
+		// 2) Update package path if it matches old module path
+		if newModule != "" && newModule != oldModule {
+			// Only replace exact attribute values that contain the old module path
+			repl = regexp.MustCompile(`<package\s+value="`+regexp.QuoteMeta(oldModule)+`[^"]*"\s*/>`).ReplaceAllStringFunc(repl, func(s string) string {
+				return strings.ReplaceAll(s, oldModule, newModule)
+			})
+			// Also replace any free-text occurrences just in case
+			repl = reOldPkg.ReplaceAllString(repl, newModule)
+		}
+
+		// 3) Update output binary name for main app run config: build/service_template -> build/<appName>
+		repl = strings.ReplaceAll(repl, "build/service_template", "build/"+appName)
+
+		if repl != orig {
+			_ = os.WriteFile(path, []byte(repl), 0o644)
+			fmt.Println("Updated run configuration:", filepath.Join("dev/runConfigurations", name))
+		}
 	}
 }
