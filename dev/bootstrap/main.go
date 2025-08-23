@@ -21,14 +21,21 @@ import (
 // bootstrap is a one-shot project renaming helper.
 // Usage examples:
 //
-//	go run ./dev/bootstrap -module github.com/spacelink/awesome_app -app awesome_app
-//	go run ./dev/bootstrap -app awesome_app
-//	go run ./dev/bootstrap -module github.com/spacelink/awesome_app -dry-run
+//	go run ./dev/bootstrap foo_bar
+//	go run ./dev/bootstrap foo_bar -dry-run
 func main() {
-	newModule := flag.String("module", "", "new Go module path (e.g., github.com/yourorg/yourapp)")
-	newApp := flag.String("app", "", "new runtime APP name (used for logging, sockets, service name)")
 	flagDryRun := flag.Bool("dry-run", false, "show planned changes without writing")
 	flag.Parse()
+
+	// Expect exactly one positional argument: the app name (also used as module path)
+	args := flag.Args()
+	if len(args) != 1 {
+		fmt.Fprintln(os.Stderr, "usage: go run ./dev/bootstrap <app_name> [-dry-run]")
+		os.Exit(2)
+	}
+	appName := args[0]
+	newModule := appName
+	newApp := appName
 
 	cwd, _ := os.Getwd()
 	gomodPath := filepath.Join(cwd, "go.mod")
@@ -44,13 +51,13 @@ func main() {
 
 	// Plan summary for user visibility
 	var plan []string
-	if *newModule != "" && *newModule != oldModule {
-		plan = append(plan, fmt.Sprintf("Change module: %s -> %s", oldModule, *newModule))
+	if newModule != "" && newModule != oldModule {
+		plan = append(plan, fmt.Sprintf("Change module: %s -> %s", oldModule, newModule))
 	} else {
 		plan = append(plan, fmt.Sprintf("Module unchanged: %s", oldModule))
 	}
-	if *newApp != "" {
-		plan = append(plan, fmt.Sprintf("Set APPNAME to: %s", *newApp))
+	if newApp != "" {
+		plan = append(plan, fmt.Sprintf("Set APPNAME to: %s", newApp))
 	}
 	fmt.Println("Bootstrap plan:")
 	for _, p := range plan {
@@ -62,8 +69,8 @@ func main() {
 	}
 
 	// 1) Update go.mod module path
-	if *newModule != "" && *newModule != oldModule {
-		if err := mf.AddModuleStmt(*newModule); err != nil {
+	if newModule != "" && newModule != oldModule {
+		if err := mf.AddModuleStmt(newModule); err != nil {
 			fatal(err, "set new module path")
 		}
 		out, err := mf.Format()
@@ -74,17 +81,17 @@ func main() {
 	}
 
 	// 2) Rewrite imports across .go files
-	if *newModule != "" && *newModule != oldModule {
-		countFiles, countImports, err := rewriteImports(cwd, oldModule, *newModule)
+	if newModule != "" && newModule != oldModule {
+		countFiles, countImports, err := rewriteImports(cwd, oldModule, newModule)
 		check(err, "rewrite imports")
 		fmt.Printf("Rewrote imports in %d files (%d import specs)\n", countFiles, countImports)
 	}
 
 	// 3) Update APPNAME in cmd/app/consts/consts.go
-	if *newApp != "" {
+	if newApp != "" {
 		constsPath := filepath.Join(cwd, "cmd", "app", "consts", "consts.go")
 		if _, err := os.Stat(constsPath); err == nil {
-			updated, err := replaceAppName(constsPath, *newApp)
+			updated, err := replaceAppName(constsPath, newApp)
 			check(err, "update APPNAME in consts.go")
 			if updated {
 				fmt.Println("Updated APPNAME in cmd/app/consts/consts.go")
@@ -103,17 +110,17 @@ func main() {
 	if b, err := os.ReadFile(teamCityPath); err == nil {
 		orig := string(b)
 		repl := orig
-		if *newApp != "" {
+		if newApp != "" {
 			// param("app.name", "...")
-			repl = regexp.MustCompile(`param\("app.name",\s*"[^"]*"\)`).ReplaceAllString(repl, fmt.Sprintf(`param("app.name", "%s")`, *newApp))
+			repl = regexp.MustCompile(`param\("app.name",\s*"[^"]*"\)`).ReplaceAllString(repl, fmt.Sprintf(`param("app.name", "%s")`, newApp))
 			// description line like: description = "CI for <app>"
-			repl = regexp.MustCompile(`description\s*=\s*"CI for [^"]*"`).ReplaceAllString(repl, fmt.Sprintf(`description = "CI for %s"`, pick(*newApp, oldModule)))
+			repl = regexp.MustCompile(`description\s*=\s*"CI for [^"]*"`).ReplaceAllString(repl, fmt.Sprintf(`description = "CI for %s"`, pick(newApp, oldModule)))
 		}
-		if *newModule != "" && *newModule != oldModule {
+		if newModule != "" && newModule != oldModule {
 			// Replace occurrences of old module path in ldflags lines
-			repl = strings.ReplaceAll(repl, oldModule+"/cmd/app/consts.Version", *newModule+"/cmd/app/consts.Version")
-			repl = strings.ReplaceAll(repl, oldModule+"/cmd/app/consts.Commit", *newModule+"/cmd/app/consts.Commit")
-			repl = strings.ReplaceAll(repl, oldModule+"/cmd/app/consts.BuildDate", *newModule+"/cmd/app/consts.BuildDate")
+			repl = strings.ReplaceAll(repl, oldModule+"/cmd/app/consts.Version", newModule+"/cmd/app/consts.Version")
+			repl = strings.ReplaceAll(repl, oldModule+"/cmd/app/consts.Commit", newModule+"/cmd/app/consts.Commit")
+			repl = strings.ReplaceAll(repl, oldModule+"/cmd/app/consts.BuildDate", newModule+"/cmd/app/consts.BuildDate")
 		}
 		if repl != orig {
 			err = os.WriteFile(teamCityPath, []byte(repl), 0o644)
@@ -123,10 +130,10 @@ func main() {
 	}
 
 	// 5) Update README.md with new app/module info
-	updateReadme(cwd, oldModule, *newModule, *newApp)
+	updateReadme(cwd, oldModule, newModule, newApp)
 
 	// 6) Update GoLand run configurations under dev/runConfigurations
-	updateRunConfigurations(cwd, oldModule, *newModule, *newApp)
+	updateRunConfigurations(cwd, oldModule, newModule, newApp)
 
 	// 7) Best-effort: run `go mod tidy` to settle dependencies after rewrite
 	if err := runGoModTidy(cwd); err != nil {

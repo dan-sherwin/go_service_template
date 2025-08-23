@@ -16,19 +16,20 @@ This repository is a reusable template for building small Go daemons/CLIs. It pr
 On macOS, this template is intended for development; production artifacts target Linux.
 
 ## Quick start (using the bootstrap tool)
-When you start a new project from this template, do NOT use global search/replace. Instead, run the bootstrap helper to safely rename the module and runtime app name.
+
+First and foremost, you need to run ```go mod tidy``` to initialize the module.
+
+Run the bootstrap helper to safely rename the module and runtime app name.
 
 Examples:
-- Rename both module and app name:
-  go run ./dev/bootstrap -module github.com/yourorg/your_app -app your_app
-- Change only the app name (keeps the module path):
-  go run ./dev/bootstrap -app your_app
+- Create a new app named your_app (sets both module path and APPNAME to your_app):
+  go run ./dev/bootstrap your_app
 - Preview planned changes without modifying files:
-  go run ./dev/bootstrap -module github.com/yourorg/your_app -dry-run
+  go run ./dev/bootstrap your_app -dry-run
 
 What the bootstrap tool does:
 - Updates go.mod module path and rewrites Go imports that reference the old module path (AST-safe).
-- Sets const APPNAME in cmd/app/consts/consts.go if -app is provided.
+- Sets const APPNAME in cmd/app/consts/consts.go.
 - Updates .teamcity/settings.kts:
   - param("app.name", "...")
   - the project description ("CI for ...")
