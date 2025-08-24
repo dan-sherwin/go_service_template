@@ -1,7 +1,8 @@
-package commands
+package app
 
 import (
 	"fmt"
+
 	u "github.com/bcicen/go-units"
 	"scm.dev.dsherwin.net/dsherwin/go_service_template/cmd/app/rpc"
 	"scm.dev.dsherwin.net/dsherwin/go_service_template/cmd/app/systemdata"

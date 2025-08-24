@@ -1,4 +1,4 @@
-package commands
+package app
 
 import (
 	"scm.dev.dsherwin.net/dsherwin/go_service_template/internal/foo"

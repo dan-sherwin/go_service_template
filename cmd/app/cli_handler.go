@@ -1,7 +1,6 @@
 package app
 
 import (
-	"scm.dev.dsherwin.net/dsherwin/go_service_template/cmd/app/commands"
 	"scm.dev.dsherwin.net/dsherwin/go_service_template/cmd/app/consts"
 
 	"github.com/alecthomas/kong"
@@ -12,7 +11,7 @@ var (
 	CLICommand *kong.Context
 	CLIConfig  struct {
 		app_settings.SettingsDef
-		commands.Commands
+		Commands
 		Run RunCommand `cmd:"" help:"Run application in foreground"`
 		ServiceDef
 	}

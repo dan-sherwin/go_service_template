@@ -1,10 +1,11 @@
-package commands
+package app
 
 import (
 	"fmt"
 	"runtime/debug"
-	"scm.dev.dsherwin.net/dsherwin/go_service_template/cmd/app/consts"
 	"strings"
+
+	"scm.dev.dsherwin.net/dsherwin/go_service_template/cmd/app/consts"
 )
 
 type (
