@@ -8,11 +8,12 @@ import (
 	"os/signal"
 	"path/filepath"
 	"runtime"
+	"syscall"
+
 	"scm.dev.dsherwin.net/dsherwin/go_service_template/cmd/app/consts"
 	"scm.dev.dsherwin.net/dsherwin/go_service_template/cmd/app/rpc"
 	"scm.dev.dsherwin.net/dsherwin/go_service_template/cmd/app/systemdata"
 	"scm.dev.dsherwin.net/dsherwin/go_service_template/internal/foo"
-	"syscall"
 
 	"go.corp.spacelink.com/sdks/go/app_settings"
 	"go.corp.spacelink.com/sdks/go/rest_api_server"
@@ -46,9 +47,9 @@ func Setup() {
 	})
 	utilities.MergeInto(vars, foo.CommandVars())
 	processCLI()
-	LoggingLevel = CLIConfig.Logging.Level
+	LoggingLevel = cliConfig.Logging.Level
 	initLogger()
-	slog.Info("logger initialized", slog.String("level", LoggingLevel))
+	slog.Info("logger initialized")
 	setupSystemdService()
 }
 
