@@ -2,12 +2,11 @@ import jetbrains.buildServer.configs.kotlin.v2019_2.*
 import jetbrains.buildServer.configs.kotlin.v2019_2.buildSteps.script
 import jetbrains.buildServer.configs.kotlin.v2019_2.triggers.vcs
 
-version = "2022.10"
+version = "2025.07"
+
 
 project {
     description = "CI for go_service_template"
-
-    vcsRoot(DslContext.settingsRoot)
 
     buildType(Build)
     buildType(Deploy)
@@ -61,11 +60,11 @@ object Build : BuildType({
                 mkdir -p dist
                 export GOOS=linux
                 export GOARCH=amd64
-                export CGO_ENABLED=0
+                export CGO_ENABLED=1
                 LDFLAGS="-X 'scm.dev.dsherwin.net/dsherwin/go_service_template/cmd/app/consts.Version=%build.version%' \
-                         -X 'scm.dev.dsherwin.net/dsherwin/go_service_template/cmd/app/consts.Commit=%teamcity.build.vcs.number%' \
-                         -X 'scm.dev.dsherwin.net/dsherwin/go_service_template/cmd/app/consts.BuildDate=%build.start.date%'"
-                go build -ldflags "$LDFLAGS" -o dist/%app.name% ./cmd
+                         -X 'scm.dev.dsherwin.net/dsherwin/go_service_template/cmd/app/consts.Commit=%build.vcs.number%' \
+                         -X 'scm.dev.dsherwin.net/dsherwin/go_service_template/cmd/app/consts.BuildDate=$(date)'"
+                go build -ldflags "${'$'}LDFLAGS" -o dist/%app.name% ./cmd
             """.trimIndent()
         }
         script {
@@ -78,25 +77,22 @@ object Build : BuildType({
         }
     }
 
-    triggers {
-        vcs {
-            branchFilter = "+:*"
-        }
-    }
-
     requirements {
         contains("teamcity.agent.jvm.os.name", "Linux")
     }
 })
 
 object Deploy : BuildType({
-    name = "Deploy to monitor1"
+    //TODO Change deployment host
+    name = "Deploy to CHANGEME"
     description = "Deploy built binary via SCP/rsync and restart systemd service."
 
     params {
         // Customize these for your environment
+        param("app.name", "service_template")
         param("deploy.dest_user", "dsherwin")
-        param("deploy.dest_host", "monitor1.corp.spacelink.com")
+        //TODO Change deployment host
+        param("deploy.dest_host", "")
         // Path to the destination binary file on the remote host
         param("deploy.dest_path", "/usr/local/%app.name%/%app.name%")
         // Service name to restart; defaults to app name
@@ -112,14 +108,14 @@ object Deploy : BuildType({
         artifacts(Build) {
             cleanDestination = true
             // Fetch the compiled binary from Build artifacts and place it as a local file named %app.name%
-            artifactRules = "dist/%app.name% => %app.name%"
+            artifactRules = "dist/%app.name%"
         }
         snapshot(Build) {}
     }
 
     steps {
         script {
-            name = "SCP deploy"
+            name = "RSYNC deploy"
             scriptContent = """
                 set -euo pipefail
                 BINARY="%app.name%"
@@ -127,14 +123,14 @@ object Deploy : BuildType({
                 DEST_HOST="%deploy.dest_host%"
                 DEST_PATH="%deploy.dest_path%"
                 SERVICE_NAME="%service.name%"
-                if [ ! -f "${BINARY}" ]; then
-                  echo "Binary not found at ${BINARY}" >&2
+                if [ ! -f "${'$'}{BINARY}" ]; then
+                  echo "Binary not found at ${'$'}{BINARY}" >&2
                   exit 1
                 fi
-                echo "Deploying ${BINARY} to ${DEST_USER}@${DEST_HOST}:${DEST_PATH}"
-                rsync -avh --stats --chmod=755 "${BINARY}" "${DEST_USER}@${DEST_HOST}:${DEST_PATH}"
-                echo "Restarting service ${SERVICE_NAME} on ${DEST_HOST}"
-                ssh -o BatchMode=yes "${DEST_USER}@${DEST_HOST}" "sudo systemctl restart ${SERVICE_NAME} || systemctl restart ${SERVICE_NAME}"
+                echo "Deploying ${'$'}{BINARY} to ${'$'}{DEST_USER}@${'$'}{DEST_HOST}:${'$'}{DEST_PATH}"
+                rsync -avh --stats --chmod=755 "${'$'}{BINARY}" "${'$'}{DEST_USER}@${'$'}{DEST_HOST}:${'$'}{DEST_PATH}"
+                echo "Restarting service ${'$'}{SERVICE_NAME} on ${'$'}{DEST_HOST}"
+                ssh -o BatchMode=yes "${'$'}{DEST_USER}@${'$'}{DEST_HOST}" "sudo systemctl restart ${'$'}{SERVICE_NAME} || systemctl restart ${'$'}{SERVICE_NAME}"
             """.trimIndent()
         }
     }
