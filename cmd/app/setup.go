@@ -1,6 +1,5 @@
 package app
 
-import "C"
 import (
 	"fmt"
 	"log/slog"
