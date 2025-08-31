@@ -12,9 +12,15 @@ import (
 )
 
 var (
-	listener   net.Listener
-	SocketPath = "/var/run/" + consts.APPNAME + ".socket"
+	listener      net.Listener
+	socketBaseDir = ""
+	SocketPath    = ""
 )
+
+func init() {
+	socketBaseDir = os.TempDir()
+	SocketPath = socketBaseDir + "/" + consts.APPNAME + "-rpc.sock"
+}
 
 func Register(rcvr any) {
 	err := rpc.Register(rcvr)
@@ -38,6 +44,12 @@ func Shutdown() {
 }
 
 func StartServer() {
+	if _, err := os.Stat(socketBaseDir); os.IsNotExist(err) {
+		if err := os.MkdirAll(socketBaseDir, 0755); err != nil {
+			slog.Error("Failed to create socket directory:", err)
+			os.Exit(1)
+		}
+	}
 	_ = os.Remove(SocketPath)
 	var err error
 	listener, err = net.Listen("unix", SocketPath)

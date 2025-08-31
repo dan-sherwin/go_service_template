@@ -54,11 +54,6 @@ func Setup() {
 
 func SetupDaemon() {
 	slog.Debug(consts.APPNAME + " app daemon setup")
-	if runtime.GOOS == "darwin" && !utilities.AmAdmin() {
-		slog.Error("Must be run as root on macOS. Try running with sudo.")
-		fmt.Println("Must be run as root on macOS. Try running with sudo.")
-		os.Exit(1)
-	}
 	// Signals handled in startAppPump; avoid SIGKILL which cannot be trapped
 	signal.Notify(shuttingDown, syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGINT, syscall.SIGHUP)
 	systemdata.StartSystemDataUpdates()

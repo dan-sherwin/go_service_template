@@ -1,8 +1,8 @@
 package main
 
 import (
-	"git.corp.spacelink.com/sdks/go/pgtypes"
 	"github.com/iancoleman/strcase"
+	"go.corp.spacelink.com/sdks/go/pgtypes"
 	"gorm.io/driver/postgres"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gen"
@@ -50,8 +50,8 @@ var (
 	outPath            = "cmd/app/db"
 	modelPkgPath       = "cmd/app/db/models"
 	importPackagePaths = []string{
-		"git.corp.spacelink.com/sdks/go/sl_datatypes",
-		"git.corp.spacelink.com/sdks/go/pgtypes",
+		"go.corp.spacelink.com/sdks/go/sl_datatypes",
+		"go.corp.spacelink.com/sdks/go/pgtypes",
 	}
 	jsonTagOverridesByTable = map[string]map[string]string{
 		//"ticket_extended": {
@@ -93,7 +93,7 @@ func sqliteToGorm() {
 	dtMaps["jsonb"] = dt("datatypes.JSONMap")
 	dtMaps["uuid"] = dt("datatypes.UUID")
 	g.WithDataTypeMap(dtMaps)
-	g.WithImportPkgPath("github.com/google/uuid", "git.corp.spacelink.com/sdks/go/pgtypes")
+	g.WithImportPkgPath("github.com/google/uuid", "go.corp.spacelink.com/sdks/go/pgtypes")
 	g.UseDB(db)
 	g.ApplyBasic(
 		g.GenerateAllTable()...,
