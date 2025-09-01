@@ -68,7 +68,7 @@ func main() {
 func sqliteToGorm() {
 	var db *gorm.DB
 	var err error
-	db, err = gorm.Open(sqlite.Open("dev/schema.db"), &gorm.Config{})
+	db, err = gorm.Open(sqlite.Open("dev/db-query-model-generator/schema.db"), &gorm.Config{})
 	if err != nil {
 		log.Fatal(err.Error())
 	}
@@ -77,9 +77,10 @@ func sqliteToGorm() {
 	if err != nil {
 		log.Fatal("Unable to ping database: " + err.Error())
 	}
+	cleanUp()
 	g := gen.NewGenerator(gen.Config{
-		OutPath:           "internal/app/db",
-		ModelPkgPath:      "internal/app/db/models",
+		OutPath:           outPath,
+		ModelPkgPath:      modelPkgPath,
 		WithUnitTest:      false,
 		FieldNullable:     true,
 		FieldCoverable:    true,
@@ -88,16 +89,43 @@ func sqliteToGorm() {
 		FieldWithTypeTag:  true,
 		Mode:              gen.WithoutContext | gen.WithDefaultQuery | gen.WithQueryInterface, // generate mode
 	})
+
+	// JSON tag strategy same as Postgres generator
 	g.WithJSONTagNameStrategy(func(col string) (tag string) { return strcase.ToLowerCamel(col) })
-	dtMaps := pgtypes.DataTypeMap()
-	dtMaps["jsonb"] = dt("datatypes.JSONMap")
-	dtMaps["uuid"] = dt("datatypes.UUID")
-	g.WithDataTypeMap(dtMaps)
-	g.WithImportPkgPath("github.com/google/uuid", "go.corp.spacelink.com/sdks/go/pgtypes")
+	// Use SQLite-specific type map (no Postgres materialized views handling)
+	g.WithDataTypeMap(sqliteTypeMap)
+	g.WithImportPkgPath("gorm.io/datatypes")
 	g.UseDB(db)
-	g.ApplyBasic(
-		g.GenerateAllTable()...,
-	)
+
+	// Build models to allow extraFields and jsonTagOverrides like Postgres path
+	modelsMap := map[string]any{}
+	for _, tableName := range sqliteTableNames(db) {
+		model := g.GenerateModel(tableName)
+		if ef, ok := extraFields[tableName]; ok {
+			for _, ef := range ef {
+				a := gen.FieldNew("", "", nil)
+				f := a(nil)
+				genRelationField(&ef, gen.Field(f))
+				model.Fields = append(model.Fields, f)
+			}
+		}
+		if jsonTagOverrides, ok := jsonTagOverridesByTable[tableName]; ok {
+			for _, f := range model.Fields {
+				if jsonTag, ok := jsonTagOverrides[f.ColumnName]; ok {
+					f.Tag.Set("json", jsonTag)
+				} else if jsonTag, ok := jsonTagOverrides[f.Name]; ok {
+					f.Tag.Set("json", jsonTag)
+				}
+			}
+		}
+		modelsMap[tableName] = model
+	}
+
+	models := []any{}
+	for _, m := range modelsMap {
+		models = append(models, m)
+	}
+	g.ApplyBasic(models...)
 	g.Execute()
 }
 
@@ -289,4 +317,106 @@ func materializedViewNames(db *gorm.DB) (tableNames []string) {
 		log.Fatal(err.Error())
 	}
 	return
+}
+
+func sqliteTableNames(db *gorm.DB) (tableNames []string) {
+	tableNames = []string{}
+	err := db.Raw("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'").Scan(&tableNames).Error
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+	return
+}
+
+var sqliteTypeMap = map[string]func(gorm.ColumnType) string{
+	// ---- booleans ----
+	"BOOLEAN": func(ct gorm.ColumnType) string {
+		n, _ := ct.Nullable()
+		return nullablePtr(n, "bool")
+	},
+	"BOOL": func(ct gorm.ColumnType) string {
+		n, _ := ct.Nullable()
+		return nullablePtr(n, "bool")
+	},
+	"TINYINT": func(ct gorm.ColumnType) string {
+		// Treat TINYINT(1) as bool; otherwise int8
+		col, _ := ct.ColumnType()
+		n, _ := ct.Nullable()
+		if strings.HasPrefix(strings.ToUpper(col), "TINYINT(1)") {
+			return nullablePtr(n, "bool")
+		}
+		return nullablePtr(n, "int8")
+	},
+
+	// ---- integers ----
+	"SMALLINT":         func(ct gorm.ColumnType) string { n, _ := ct.Nullable(); return nullablePtr(n, "int16") },
+	"INTEGER":          func(ct gorm.ColumnType) string { n, _ := ct.Nullable(); return nullablePtr(n, "int64") }, // SQLite INTEGER is 64-bit
+	"INT":              func(ct gorm.ColumnType) string { n, _ := ct.Nullable(); return nullablePtr(n, "int64") },
+	"INT2":             func(ct gorm.ColumnType) string { n, _ := ct.Nullable(); return nullablePtr(n, "int16") },
+	"INT8":             func(ct gorm.ColumnType) string { n, _ := ct.Nullable(); return nullablePtr(n, "int64") },
+	"MEDIUMINT":        func(ct gorm.ColumnType) string { n, _ := ct.Nullable(); return nullablePtr(n, "int32") },
+	"UNSIGNED BIG INT": func(ct gorm.ColumnType) string { n, _ := ct.Nullable(); return nullablePtr(n, "uint64") },
+	"BIGINT":           func(ct gorm.ColumnType) string { n, _ := ct.Nullable(); return nullablePtr(n, "int64") },
+
+	// ---- floats ----
+	"REAL":   func(ct gorm.ColumnType) string { n, _ := ct.Nullable(); return nullablePtr(n, "float64") },
+	"DOUBLE": func(ct gorm.ColumnType) string { n, _ := ct.Nullable(); return nullablePtr(n, "float64") },
+	"FLOAT":  func(ct gorm.ColumnType) string { n, _ := ct.Nullable(); return nullablePtr(n, "float32") },
+
+	// ---- strings ----
+	"TEXT":    func(ct gorm.ColumnType) string { n, _ := ct.Nullable(); return nullablePtr(n, "string") },
+	"VARCHAR": func(ct gorm.ColumnType) string { n, _ := ct.Nullable(); return nullablePtr(n, "string") },
+	"CHAR":    func(ct gorm.ColumnType) string { n, _ := ct.Nullable(); return nullablePtr(n, "string") },
+	"CLOB":    func(ct gorm.ColumnType) string { n, _ := ct.Nullable(); return nullablePtr(n, "string") },
+	"UUID":    func(ct gorm.ColumnType) string { return "datatypes.UUID" },
+	"JSON":    func(ct gorm.ColumnType) string { return "datatypes.JSON" },
+	"JSONB":   func(ct gorm.ColumnType) string { return "datatypes.JSON" },
+
+	// ---- bytes ----
+	"BLOB": func(gorm.ColumnType) string { return "[]byte" },
+
+	// ---- dates/times ----
+	"DATE": func(ct gorm.ColumnType) string {
+		n, _ := ct.Nullable()
+		return nullablePtr(n, "time.Time")
+	},
+	"DATETIME": func(ct gorm.ColumnType) string {
+		n, _ := ct.Nullable()
+		return nullablePtr(n, "time.Time")
+	},
+	"TIMESTAMP": func(ct gorm.ColumnType) string {
+		n, _ := ct.Nullable()
+		return nullablePtr(n, "time.Time")
+	},
+	// Duration-like types (custom schemas often use these as declared types)
+	"DURATION": func(ct gorm.ColumnType) string {
+		n, _ := ct.Nullable()
+		return nullablePtr(n, "time.Duration")
+	},
+	"INTERVAL": func(ct gorm.ColumnType) string {
+		n, _ := ct.Nullable()
+		return nullablePtr(n, "time.Duration")
+	},
+
+	// ---- decimals / numerics ----
+	// If you need exact decimals, map to shopspring/decimal and import it.
+	"NUMERIC": func(ct gorm.ColumnType) string {
+		n, _ := ct.Nullable()
+		return nullablePtr(n, "float64")
+	},
+	"DECIMAL": func(ct gorm.ColumnType) string {
+		n, _ := ct.Nullable()
+		return nullablePtr(n, "float64")
+	},
+}
+
+func nullablePtr(yes bool, base string) string {
+	if yes {
+		// make a pointer for nullable scalar types
+		switch base {
+		case "bool", "int", "int8", "int16", "int32", "int64", "uint64", "float32", "float64", "string", "time.Time", "time.Duration":
+			return "*" + base
+		}
+	}
+	return base
 }

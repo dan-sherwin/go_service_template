@@ -169,12 +169,12 @@ github.com/willabides/kongplete v0.4.0 h1:eivXxkp5ud5+4+NVN9e4goxC5mSh3n1RHov+gs
 github.com/willabides/kongplete v0.4.0/go.mod h1:0P0jtWD9aTsqPSUAl4de35DLghrr57XcayPyvqSi2X8=
 github.com/yusufpapurcu/wmi v1.2.4 h1:zFUKzehAFReQwLys1b/iSMl+JQGSCSjtVqQn9bBrPo0=
 github.com/yusufpapurcu/wmi v1.2.4/go.mod h1:SBZ9tNy3G9/m5Oi98Zks0QjeHVDvuK0qfxQmPyzfmi0=
-go.corp.spacelink.com/sdks/go/app_settings v0.2.5 h1:+FJrV9xIXUpaLGrDE29bu3ORJZjWB6FcP91czvACblw=
-go.corp.spacelink.com/sdks/go/app_settings v0.2.5/go.mod h1:ZhXfZxHZh7+4xkQGkRWORjbE58H+bgcRCtIdJAJwO9M=
+go.corp.spacelink.com/sdks/go/app_settings v0.2.8 h1:rMN5S6Ps8yzemoFlaEfE4pOlEH7tEovslafIofdZX30=
+go.corp.spacelink.com/sdks/go/app_settings v0.2.8/go.mod h1:ZhXfZxHZh7+4xkQGkRWORjbE58H+bgcRCtIdJAJwO9M=
 go.corp.spacelink.com/sdks/go/rest_api_server v0.2.4 h1:MHUsVubUWnTMAFoVl0il/TkCzv1FYSSnwk47JWZg1gw=
 go.corp.spacelink.com/sdks/go/rest_api_server v0.2.4/go.mod h1:D7wvBtvAD5djs08dGkiFi1hWYlVAEpTiqAqho37B3FQ=
-go.corp.spacelink.com/sdks/go/utilities v0.2.11 h1:rpC3bZ9zX71bNa5q4uOuQvHVg+U7c1BNGHLekag0q/A=
-go.corp.spacelink.com/sdks/go/utilities v0.2.11/go.mod h1:ad+oIqqnaI96a69VIDyPW6ckjXuyD5nx/AtmxsDYul4=
+go.corp.spacelink.com/sdks/go/utilities v0.2.12 h1:QiUEut88tIR7Ojcl3wVClw5mY30xnyDNzm0QYL7ZJC4=
+go.corp.spacelink.com/sdks/go/utilities v0.2.12/go.mod h1:ad+oIqqnaI96a69VIDyPW6ckjXuyD5nx/AtmxsDYul4=
 golang.org/x/arch v0.0.0-20210923205945-b76863e36670/go.mod h1:5om86z9Hs0C8fWVUuoMHwpExlXzs5Tkyp9hOrfG7pp8=
 golang.org/x/arch v0.8.0 h1:3wRIsP3pM4yUptoR96otTUOXI367OS0+c9eeRi9doIc=
 golang.org/x/arch v0.8.0/go.mod h1:FEVrYAQjsQXMVJ1nsMoVVXPZg6p2JE2mx8psSWTDQys=
