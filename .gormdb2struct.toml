@@ -1,0 +1,58 @@
+# gormdb2struct configuration
+# OutPath: directory where generated files are written (models, query, db init)
+OutPath = "./app/db"
+
+# DatabaseDialect: "postgresql" or "sqlite"
+DatabaseDialect = "postgresql"
+
+# GenerateDbInit: also generate a db initialization file (db.go or db_sqlite.go)
+GenerateDbInit = true
+
+# IncludeAutoMigrate: if true, generated DbInit will run AutoMigrate for all models
+IncludeAutoMigrate = false
+
+# CleanUp: remove previous *gen.go files in OutPath before generating
+CleanUp = true
+
+# ImportPackagePaths: extra imports to include in generated code (optional)
+ImportPackagePaths = [
+  "github.com/dan-sherwin/gormdb2struct/pgtypes",
+]
+
+# TypeMap: database column type overrides (optional)
+[TypeMap]
+# "jsonb" = "datatypes.JSONMap"
+# "uuid"  = "datatypes.UUID"
+
+# DomainTypeMap: map database domain names to Go types (optional)
+[DomainTypeMap]
+# "my_text_domain" = "string"
+
+# ExtraFields: add relation fields to specific models (optional)
+[ExtraFields]
+# [ExtraFields."ticket_extended"]
+#   [[ExtraFields."ticket_extended"]]
+#   StructPropName = "Attachments"
+#   StructPropType = "models.Attachment"  # fully-qualified type
+#   FkStructPropName = "TicketID"
+#   RefStructPropName = "TicketID"
+#   HasMany = true
+#   Pointer = true
+
+# JsonTagOverridesByTable: override json tags for fields (optional)
+[JsonTagOverridesByTable]
+# [JsonTagOverridesByTable."ticket_extended"]
+#   subject_fts = "-"  # omit from JSON
+
+# --- PostgreSQL specific options ---
+# Required when DatabaseDialect = "postgresql"
+DbHost = "localhost"     # required
+DbPort = 5432             # optional, defaults to 5432
+DbName = ""    # required
+DbUser = ""        # optional
+DbPassword = ""     # optional
+DbSSLMode = false         # optional: true to enable sslmode=require in DSN
+
+# --- SQLite specific option ---
+# Required when DatabaseDialect = "sqlite"
+SqlitedDbPath = "./dev/schema.db"
