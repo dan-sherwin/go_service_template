@@ -140,6 +140,25 @@ func main() {
 		fmt.Println("Note: go mod tidy failed:", err)
 	}
 
+	// 8) Update .gormdb2struct.toml OutPackagePath to the correct module path
+	gormConf := filepath.Join(cwd, ".gormdb2struct.toml")
+	if b, err := os.ReadFile(gormConf); err == nil {
+		orig := string(b)
+		// Determine effective module path
+		effectiveModule := oldModule
+		if newModule != "" {
+			effectiveModule = newModule
+		}
+		correct := fmt.Sprintf("OutPackagePath = \"%s/app/db\"", effectiveModule)
+		re := regexp.MustCompile(`(?m)^OutPackagePath\s*=\s*"[^"]*"`)
+		repl := re.ReplaceAllString(orig, correct)
+		if repl != orig {
+			if err := os.WriteFile(gormConf, []byte(repl), 0o644); err == nil {
+				fmt.Println("Updated .gormdb2struct.toml OutPackagePath")
+			}
+		}
+	}
+
 	fmt.Println("Bootstrap completed successfully.")
 }
 

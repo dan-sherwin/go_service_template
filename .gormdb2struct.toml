@@ -2,6 +2,9 @@
 # OutPath: directory where generated files are written (models, query, db init)
 OutPath = "./app/db"
 
+# OutPackagePath: package path to the out path for use in the DbInit file (e.g. github.com/username/my_app/generated) (optional)
+OutPackagePath = "scm.dev.dsherwin.net/dsherwin/go_service_template/app/db"
+
 # DatabaseDialect: "postgresql" or "sqlite"
 DatabaseDialect = "postgresql"
 
