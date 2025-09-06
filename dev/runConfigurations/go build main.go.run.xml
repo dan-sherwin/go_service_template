@@ -4,7 +4,6 @@
     <working_directory value="$PROJECT_DIR$" />
     <go_parameters value="-o $ProjectFileDir$/build/service_template" />
     <parameters value="run" />
-    <sudo value="true" />
     <kind value="FILE" />
     <package value="scm.dev.dsherwin.net/dsherwin/go_service_template" />
     <directory value="$PROJECT_DIR$" />

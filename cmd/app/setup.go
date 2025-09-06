@@ -6,7 +6,6 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
-	"runtime"
 	"syscall"
 
 	"scm.dev.dsherwin.net/dsherwin/go_service_template/cmd/app/consts"
