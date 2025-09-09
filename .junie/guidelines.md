@@ -1,47 +1,166 @@
-# Project Guidelines
+# Project Guidelines (Living Document)
 
-## Logging
-- Use slog with structured keys. Standard keys: app, version, pid, user, component, error.
-- Levels: debug for diagnostics, info for lifecycle, warn for recoverable issues, error for failures.
-- Linux: default to JournaldHandler; macOS: TextHandler to stdout.
+Purpose
+- Capture opinionated, practical conventions for this codebase.
+- Keep services consistent, observable, and easy to operate.
+- Evolve per project; upstream reusable improvements to your template.
 
-## Error Handling
-- Avoid panics in production paths. Log and return or exit with non-zero status.
-- Wrap errors with context using fmt.Errorf("context: %w", err).
-- Use key name "error" consistently for error fields.
+Owner: dsherwin
+Last updated: 2025-09-09
 
-## Configuration
+
+1. Project Layout
+- Follow this project’s layout as default:
+  - cmd/app/: application entrypoint, CLI, logging init, rpc, db init
+  - cmd/app/db/: generated GORM models and DB access
+  - cmd/app/systemdata/: background jobs tied to app lifecycle
+  - internal/: domain logic, collectors, integrations (gnmi, netconf, etc.)
+  - rest_api/: Gin handlers and route wiring
+  - build/: build artifacts and config samples
+  - dev/: run configurations, tools support, schema.sql
+  - docs/: documentation (auto-generated preferred)
+- Variant: when it simplifies boundaries, place db package under internal instead of cmd/app.
+
+Rationale: Keep the executable-specific wiring in cmd, core logic in internal, and REST-specific code isolated in rest_api.
+
+
+2. Language, Style, and Tooling
+- Go version: track stable in go.mod; upgrade after verification.
+- Formatting: gofmt + goimports; enforce via CI.
+- Linting: golangci-lint with sensible defaults; justify ignores in code.
+- Logging: use log/slog everywhere.
+  - Default to structured output and consistent field keys.
+  - Standard keys: app, version, commit, build_date, pid, user, component, op, id, device, serial, error.
+  - Levels: debug (diagnostics), info (lifecycle), warn (recoverable issues), error (failures).
+  - Linux: prefer JournaldHandler by default. macOS: TextHandler to stdout.
+  - No log.Fatal in libraries; prefer returning errors and logging at edges.
+  - Plan for centralized logging backends; keep logger wiring clean to swap handlers.
+- Concurrency: tie goroutines to context; prefer errgroup when fanning out; avoid leaks.
+- Panics: only for unrecoverable init errors; otherwise return errors.
+- Style: follow Go naming conventions; keep locals unexported unless needed; keep slog key names consistent and avoid spelling drift.
+
+
+3. Configuration
+- Use app_settings for application settings.
+  - Register settings in init() and call app_settings.Setup() during startup.
+  - Provide RPC exposure for listing live settings (see rpc.SocketPath usage).
 - Precedence: CLI flags > environment variables > persisted app_settings > defaults.
-- Common envs: LOG_LEVEL, HTTP_LISTEN_ADDR, RPC_SOCKET_PATH.
+- Common env vars: LOG_LEVEL, HTTP_LISTEN_ADDR, RPC_SOCKET_PATH.
+- Configuration files: prefer TOML when multiple files are needed; document paths.
+- Validate config centrally and fail fast with clear messages.
+- Never log secrets; redact sensitive values in logs and errors.
 
-## Contexts and Shutdown
-- Use context or explicit Stop/Shutdown methods for long-running goroutines.
-- Trap SIGINT, SIGTERM, SIGQUIT, SIGHUP; SIGKILL cannot be trapped.
-- On shutdown: stop tickers/workers, close RPC listener, and shutdown HTTP server if supported.
 
-## RPC
-- Prefer Unix domain sockets by default; make path configurable for non-root users (e.g., XDG_RUNTIME_DIR). Default permissions 0660.
-- Ensure client connections are closed or use rpc.Call helper which dials and closes per call.
-- Validate inputs and return typed errors.
+4. REST/HTTP
+- Framework: Gin, with rest_api_server as the default server harness.
+  - Listening address managed via app_settings (see http_listening_address).
+- Middleware: central auth, logging, recovery. Keep per-route logic thin.
+- API Responses: use apiresponse helpers everywhere for consistency.
+  - apiresponse.SendApiResponse(c, data)
+  - apiresponse.SendApiErrorResponse(c, apiErrCode, message)
+  - Map domain errors to stable API error codes.
+- Start HTTP server after RPC listener is ready.
+- Endpoints: provide /healthz and /ready via rest_api_server if applicable.
+- Timeouts and cancellation: ensure per-request contexts are respected.
+- Logging: consider JSON logs in production for aggregation.
+- Security: validate inputs; only enable CORS as required.
 
-## HTTP
-- Start server after RPC is ready. Provide /healthz and /ready endpoints if applicable in rest_api_server.
-- Consider enabling JSON logs in production for log aggregation.
+Current note: Some handlers still use c.JSON directly; migrate to apiresponse helpers as routes are touched.
 
-## Dependencies
-- Pin major.minor Go version in go.mod (e.g., `go 1.24`). Run `go mod tidy` and `go vet` in CI.
-- Prefer `golangci-lint` locally and in CI.
 
-## Versioning
-- Inject Version, Commit, BuildDate via `-ldflags`. Log them at startup and expose via a CLI command.
+5. Error Handling
+- Avoid panics in production paths. Log and return (or exit with non-zero status at process edges).
+- Prefer error wrapping with %w to preserve causality.
+- Provide actionable context in messages and logs (who/what/where):
+  - return fmt.Errorf("collect optics for device %s: %w", deviceID, err)
+  - slog.Error("collect optics", "device", deviceID, "error", err)
+- Use sentinel errors sparingly (mainly for control flow), rely on errors.Is/As.
+- Don’t both log and return the same error deep inside libraries; log at boundaries.
+- Use key name "error" consistently for error fields in logs.
 
-## Testing
-- Unit tests for RPC handlers and helpers. Use race detector. Avoid tests depending on /var/run unless using temp dirs.
 
-## Security
-- Restrict socket permissions to 0660 and (optionally) set group ownership.
-- Avoid logging secrets; redact sensitive fields.
+6. Contexts and Shutdown
+- Long-running goroutines must accept context or expose explicit Stop/Shutdown methods.
+- Trap signals: SIGINT, SIGTERM, SIGQUIT, SIGHUP. Note: SIGKILL cannot be trapped.
+- On shutdown:
+  - Stop tickers/workers.
+  - Close RPC listener.
+  - Shutdown HTTP server (gracefully) if supported.
+- Ensure cancellation is propagated to fanned-out work (use errgroup when applicable).
 
-## Style
-- Follow Go naming conventions; unexport local vars unless needed.
-- Keep consistent slog key names and avoid inconsistent key spellings.
+
+7. RPC
+- Prefer Unix domain sockets by default; make path configurable (e.g., under XDG_RUNTIME_DIR for non-root users).
+- Default socket permissions: 0660; optionally set group ownership for shared access.
+- Ensure clients close connections or use an rpc.Call helper that dials and closes per call.
+- Validate inputs and return typed errors from handlers.
+
+
+8. HTTP
+- Start server after RPC is ready (ordering matters for readiness).
+- Provide /healthz and /ready endpoints where applicable; integrate with deployment readiness checks.
+- Use structured JSON logs in production for log aggregation.
+
+
+9. Database
+- ORM: GORM as the standard.
+- Model generation: use gormdb2struct to generate structs from the DB schema (PostgreSQL/SQLite).
+  - See .gormdb2struct.toml for sample config.
+  - Use the “Rebuild Database Structs” run configuration as a reference workflow.
+- Migrations: maintain schema.sql in dev/ (or a migrations tool in future); keep schema as the source of truth for generation.
+- Transactions: pass context and tx explicitly; keep SQL concerns in the db layer.
+
+
+10. Dependencies
+- Pin major.minor Go version in go.mod (e.g., `go 1.24`).
+- Run `go mod tidy` and `go vet` in CI.
+- Prefer `golangci-lint` locally and in CI; keep a curated ruleset and justify ignores.
+
+
+11. Versioning
+- Inject build info via -ldflags: Version, Commit, BuildDate.
+- Log build info at startup and expose via a CLI command.
+
+
+12. Testing
+- Strategy: prefer integration and end-to-end tests over exhaustive per-function unit tests.
+  - Still include focused unit tests for RPC handlers and helpers.
+  - Use table-driven tests where they add clarity.
+  - Use -short or build tags to separate slow tests when needed.
+- Use the race detector in CI for tests (`-race`).
+- Avoid tests that depend on /var/run paths; use temp directories/sockets instead.
+- Observability in tests: emit structured logs to aid troubleshooting.
+- Aim for meaningful coverage, not numeric goals. Prioritize correctness and regressions.
+
+
+13. Observability (Logs, Metrics, Tracing)
+- Logs: slog structured logs with consistent field keys.
+- Metrics: expose Prometheus metrics when relevant; document key SLIs.
+- Tracing: adopt OpenTelemetry when cross-service visibility is needed; propagate context.
+
+
+14. CI/CD
+- CI gates: fmt, lint, build, tests (with race), govulncheck, vet, and mod tidy verification.
+- Releases: tag semantic versions; keep changelog entries in PRs.
+
+
+15. Documentation
+- Prefer automated documentation generation for functional and file-level docs.
+- Generate README.md content using tooling/AI; keep it accurate and up-to-date.
+- Keep concise HOWTOs for local dev, running, and debugging.
+
+
+16. Code Review
+- Small focused PRs; descriptive titles; include tests when applicable.
+- Block on lint/test failures; resolve or justify comments.
+
+
+17. Housekeeping & Security
+- Remove dead code promptly.
+- Keep dependencies current (Renovate/Dependabot or scheduled updates).
+- Restrict socket permissions to 0660; set group ownership when required.
+- Avoid logging secrets; redact sensitive fields in logs and errors.
+
+
+Changelog (for this document)
+- 2025-09-09: Initial version and alignment with preferences and operational details: slog with standard keys and handlers, Gin + rest_api_server with apiresponse, app_settings precedence (CLI > env > persisted > defaults), Unix socket RPC with 0660 perms, ldflags build info, race-enabled tests, GORM + gormdb2struct, integration-first testing, automated docs.
