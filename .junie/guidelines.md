@@ -6,7 +6,7 @@ Purpose
 - Evolve per project; upstream reusable improvements to your template.
 
 Owner: dsherwin
-Last updated: 2025-09-09
+Last updated: 2025-09-10
 
 
 1. Project Layout
@@ -38,6 +38,7 @@ Rationale: Keep the executable-specific wiring in cmd, core logic in internal, a
 - Concurrency: tie goroutines to context; prefer errgroup when fanning out; avoid leaks.
 - Panics: only for unrecoverable init errors; otherwise return errors.
 - Style: follow Go naming conventions; keep locals unexported unless needed; keep slog key names consistent and avoid spelling drift.
+- CLI: use kong for CLI parsing with subcommands; keep commands small and composable; offer shell completions via kongplete.
 
 
 3. Configuration
@@ -47,6 +48,7 @@ Rationale: Keep the executable-specific wiring in cmd, core logic in internal, a
 - Precedence: CLI flags > environment variables > persisted app_settings > defaults.
 - Common env vars: LOG_LEVEL, HTTP_LISTEN_ADDR, RPC_SOCKET_PATH.
 - Configuration files: prefer TOML when multiple files are needed; document paths.
+- Data directory conventions: default per OS (Linux: /var/lib/<app>, macOS: ~/Library/Application Support/<App>, Windows: C:\\ProgramData\\<App>); allow override via CHRONIX_DATA_DIR or app-specific DATA_DIR env; ensure directory exists at startup.
 - Validate config centrally and fail fast with clear messages.
 - Never log secrets; redact sensitive values in logs and errors.
 
@@ -64,6 +66,7 @@ Rationale: Keep the executable-specific wiring in cmd, core logic in internal, a
 - Timeouts and cancellation: ensure per-request contexts are respected.
 - Logging: consider JSON logs in production for aggregation.
 - Security: validate inputs; only enable CORS as required.
+  - Cookies/JWT: set HttpOnly; set Secure in production; use short TTLs for admin/session-elevation tokens; avoid putting sensitive data in JWT claims; rotate secrets.
 
 Current note: Some handlers still use c.JSON directly; migrate to apiresponse helpers as routes are touched.
 
@@ -91,7 +94,8 @@ Current note: Some handlers still use c.JSON directly; migrate to apiresponse he
 
 7. RPC
 - Prefer Unix domain sockets by default; make path configurable (e.g., under XDG_RUNTIME_DIR for non-root users).
-- Default socket permissions: 0660; optionally set group ownership for shared access.
+- Default socket permissions: 0660; optionally set group ownership for shared access. Ensure parent directory perms 0770 when creating.
+- Prefer placing sockets under XDG_RUNTIME_DIR for non-root users; fall back to a temp dir when unavailable.
 - Ensure clients close connections or use an rpc.Call helper that dials and closes per call.
 - Validate inputs and return typed errors from handlers.
 
@@ -163,4 +167,5 @@ Current note: Some handlers still use c.JSON directly; migrate to apiresponse he
 
 
 Changelog (for this document)
+- 2025-09-10: Refined to match current Chronix repo conventions: added CLI guidance (kong + kongplete), documented OS-specific data directory defaults and CHRONIX_DATA_DIR override, clarified RPC socket directory perms (0770) and XDG_RUNTIME_DIR preference, expanded REST security (cookies/JWT best practices), and minor wording/consistency updates.
 - 2025-09-09: Initial version and alignment with preferences and operational details: slog with standard keys and handlers, Gin + rest_api_server with apiresponse, app_settings precedence (CLI > env > persisted > defaults), Unix socket RPC with 0660 perms, ldflags build info, race-enabled tests, GORM + gormdb2struct, integration-first testing, automated docs.
