@@ -29,9 +29,9 @@ func setDefaultLogger(base *slog.Logger) {
 		slog.Int("pid", os.Getpid()),
 		slog.String("user", user.Username),
 		slog.String("app", consts.APPNAME),
-		slog.String("version", Version),
-		slog.String("commit", Commit),
-		slog.String("build_date", BuildDate),
+		slog.String("version", consts.Version),
+		slog.String("commit", consts.Commit),
+		slog.String("build_date", consts.BuildDate),
 	)
 	slog.SetDefault(child)
 }

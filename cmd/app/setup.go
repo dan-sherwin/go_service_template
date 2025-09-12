@@ -74,7 +74,7 @@ func Setup() {
 	processCLI()
 	LoggingLevel = cliConfig.Logging.Level
 	initLogger()
-	slog.Info("build info", slog.String("version", Version), slog.String("commit", Commit), slog.String("build_date", BuildDate))
+	slog.Info("build info", slog.String("version", consts.Version), slog.String("commit", consts.Commit), slog.String("build_date", consts.BuildDate))
 	setupSystemdService()
 }
 
