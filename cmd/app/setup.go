@@ -65,7 +65,6 @@ func init() {
 func Setup() {
 	setWorkingDir()
 	slog.Debug("working directory set")
-	slog.Info("initializing settings DB", slog.String("app", consts.APPNAME))
 	app_settings.Setup(consts.APPNAME+".db", app_settings.SettingsOptions{
 		RpcSocketPathToListRunningSettings: rpc.SocketPath,
 		KongVars:                           &vars,
