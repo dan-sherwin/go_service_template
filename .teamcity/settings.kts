@@ -60,7 +60,7 @@ object Build : BuildType({
                 mkdir -p dist
                 export GOOS=linux
                 export GOARCH=amd64
-                export CGO_ENABLED=1
+                export CGO_ENABLED=0
                 LDFLAGS="-X 'scm.dev.dsherwin.net/dsherwin/go_service_template/cmd/app/consts.Version=%build.version%' \
                          -X 'scm.dev.dsherwin.net/dsherwin/go_service_template/cmd/app/consts.Commit=%build.vcs.number%' \
                          -X 'scm.dev.dsherwin.net/dsherwin/go_service_template/cmd/app/consts.BuildDate=$(date)'"

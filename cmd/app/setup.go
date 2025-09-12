@@ -33,6 +33,33 @@ func init() {
 		Name:        "http_listening_address",
 		Description: "HTTP Listening address",
 	})
+	// Logging level setting
+	app_settings.RegisterSetting(&app_settings.Setting{
+		SetFunc: func(s string) error {
+			if s == "" {
+				return fmt.Errorf("log level cannot be empty")
+			}
+			LoggingLevel = s
+			initLogger()
+			return nil
+		},
+		GetFunc:     func() string { return LoggingLevel },
+		Name:        "log_level",
+		Description: "Logging level (debug|info|warn|error)",
+	})
+	// RPC socket path setting
+	app_settings.RegisterSetting(&app_settings.Setting{
+		SetFunc: func(s string) error {
+			if s == "" {
+				return fmt.Errorf("rpc socket path cannot be empty")
+			}
+			rpc.SocketPath = s
+			return nil
+		},
+		GetFunc:     func() string { return rpc.SocketPath },
+		Name:        "rpc_socket_path",
+		Description: "Path to Unix domain socket for RPC",
+	})
 }
 
 func Setup() {
@@ -47,7 +74,7 @@ func Setup() {
 	processCLI()
 	LoggingLevel = cliConfig.Logging.Level
 	initLogger()
-	slog.Info("logger initialized")
+	slog.Info("build info", slog.String("version", Version), slog.String("commit", Commit), slog.String("build_date", BuildDate))
 	setupSystemdService()
 }
 

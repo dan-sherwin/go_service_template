@@ -6,20 +6,30 @@ import (
 	"net"
 	"net/rpc"
 	"os"
+	"path/filepath"
+
 	"scm.dev.dsherwin.net/dsherwin/go_service_template/cmd/app/consts"
 
 	"go.corp.spacelink.com/sdks/go/utilities"
 )
 
 var (
-	listener      net.Listener
-	socketBaseDir = ""
-	SocketPath    = ""
+	listener   net.Listener
+	SocketPath string
 )
 
+func DefaultSocketPath() string {
+	if p := os.Getenv("RPC_SOCKET_PATH"); p != "" {
+		return p
+	}
+	if r := os.Getenv("XDG_RUNTIME_DIR"); r != "" {
+		return filepath.Join(r, consts.APPNAME, consts.APPNAME+"-rpc.sock")
+	}
+	return filepath.Join(os.TempDir(), consts.APPNAME+"-rpc.sock")
+}
+
 func init() {
-	socketBaseDir = os.TempDir()
-	SocketPath = socketBaseDir + "/" + consts.APPNAME + "-rpc.sock"
+	SocketPath = DefaultSocketPath()
 }
 
 func Register(rcvr any) {
@@ -43,14 +53,11 @@ func Shutdown() {
 	_ = os.Remove(SocketPath)
 }
 
-func StartServer() {
-	if _, err := os.Stat(socketBaseDir); os.IsNotExist(err) {
-		if err := os.MkdirAll(socketBaseDir, 0755); err != nil {
-			slog.Error("Failed to create socket directory:", err)
-			os.Exit(1)
-		}
-	}
+func StartServer() error {
 	_ = os.Remove(SocketPath)
+	if err := os.MkdirAll(filepath.Dir(SocketPath), 0o770); err != nil {
+		return fmt.Errorf("create socket dir: %w", err)
+	}
 	var err error
 	listener, err = net.Listen("unix", SocketPath)
 	if err != nil {
@@ -73,6 +80,7 @@ func StartServer() {
 			go rpc.ServeConn(conn)
 		}
 	}()
+	return nil
 }
 
 func Client() *rpc.Client {
