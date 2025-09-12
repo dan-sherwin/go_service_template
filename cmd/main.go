@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+
 	"scm.dev.dsherwin.net/dsherwin/go_service_template/cmd/app"
 	"scm.dev.dsherwin.net/dsherwin/go_service_template/cmd/app/consts"
 
@@ -12,6 +13,8 @@ import (
 )
 
 func main() {
+	app.StartRecorder()
+	defer app.PanicDefer()
 	app.Setup()
 	processCommand()
 	slog.Info("Run command called. Starting "+consts.APPNAME+" as a daemon.",

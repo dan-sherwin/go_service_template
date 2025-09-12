@@ -10,6 +10,7 @@ type (
 		BuildInfoCommandDef
 		SystemDataCommandDef
 		foo.FooCommandDef
+		RecorderCommandDef
 	}
 )
 
