@@ -17,7 +17,7 @@ type (
 )
 
 var (
-	shuttingDown = make(chan os.Signal)
+	shuttingDown = make(chan os.Signal, 1)
 )
 
 func startAppPump() {
