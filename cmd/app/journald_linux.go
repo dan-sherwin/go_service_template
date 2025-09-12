@@ -12,9 +12,11 @@ import (
 // JournaldHandler is a custom slog.Handler that sends logs to journald.
 type JournaldHandler struct{}
 
-// Enabled always returns true to enable logging for all levels.
+var journaldMinLevel slog.Level = slog.LevelInfo
+
+// Enabled filters logs below the configured minimum level.
 func (h *JournaldHandler) Enabled(_ context.Context, level slog.Level) bool {
-	return true
+	return level >= journaldMinLevel
 }
 
 // Handle sends the log record to journald.
