@@ -28,7 +28,7 @@ type (
 		Status  ServiceStatusCommand  `cmd:"" group:"Systemd" help:"Show the status of the systemdService" default:"1"`
 	}
 	ServiceDef struct {
-		Service Service `cmd:"" help:"Service management commands"`
+		Service Service `cmd:"" help:"Service management commands" name:"systemd"`
 	}
 )
 
