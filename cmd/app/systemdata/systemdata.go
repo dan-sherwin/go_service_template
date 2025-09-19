@@ -68,11 +68,4 @@ func updateSystemData() {
 	if len(cpuPerc) > 0 {
 		systemData.CPUPercent = cpuPerc[0]
 	}
-	slog.Debug("system data updated",
-		slog.Uint64("alloc", systemData.Alloc),
-		slog.Uint64("sysAlloc", systemData.SystemAlloc),
-		slog.Int("goroutines", systemData.NumGoRoutines),
-		slog.Int("cpus", systemData.NumCPUs),
-		slog.Float64("cpu%", systemData.CPUPercent),
-	)
 }
