@@ -1,3 +1,4 @@
+// Package main provides a one-shot project renaming helper.
 package main
 
 import (

@@ -29,7 +29,9 @@ func init() {
 
 func StartRecorder() {
 	recorder = trace.NewFlightRecorder(trace.FlightRecorderConfig{})
-	recorder.Start()
+	if err := recorder.Start(); err != nil {
+		log.Printf("Failed to start flight recorder: %v", err)
+	}
 	startRecorderDumpWatch()
 }
 
@@ -48,7 +50,9 @@ func startRecorderDumpWatch() {
 	go func() {
 		for {
 			recorderFile := <-dumpRecorder
-			dumpRecorderToFile(recorderFile)
+			if _, err := dumpRecorderToFile(recorderFile); err != nil {
+				log.Printf("Failed to dump recorder to file %s: %v", recorderFile, err)
+			}
 		}
 	}()
 }
@@ -58,12 +62,16 @@ func dumpRecorderToFile(filePath string) (int64, error) {
 	if err != nil {
 		return 0, fmt.Errorf("failed to create trace file %s: %w", filePath, err)
 	}
-	defer f.Close()
-	if n, err := recorder.WriteTo(f); err != nil {
+	defer func() {
+		if err := f.Close(); err != nil {
+			log.Printf("Failed to close trace file %s: %v", filePath, err)
+		}
+	}()
+	n, err := recorder.WriteTo(f)
+	if err != nil {
 		return 0, fmt.Errorf("failed to write trace to file %s: %w", filePath, err)
-	} else {
-		return n, nil
 	}
+	return n, nil
 }
 
 func (c *DumpRecorderCommand) Run() error {
@@ -76,7 +84,7 @@ func (c *DumpRecorderCommand) Run() error {
 	return nil
 }
 
-func (f *DumpRecorderCommand) DumpRecorder(file string, _ *struct{}) error {
+func (c *DumpRecorderCommand) DumpRecorder(file string, _ *struct{}) error {
 	dumpRecorder <- file
 	return nil
 }

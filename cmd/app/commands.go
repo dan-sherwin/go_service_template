@@ -14,5 +14,5 @@ type (
 	}
 )
 
-func postParseProcessing(cliCommand *kong.Context, cliConfig *CLIConfig) {
+func postParseProcessing(_ *kong.Context, _ *CLIConfig) {
 }

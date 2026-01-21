@@ -31,7 +31,9 @@ func main() {
 	slog.Info("http server started", slog.String("addr", restapi.ListeningAddress))
 	slog.Info(consts.APPNAME + " is running.")
 	app.WaitForShutdown()
-	restapi.ShutdownHttpServer()
+	if err := restapi.ShutdownHttpServer(); err != nil {
+		slog.Error("Failed to shutdown HTTP server", slog.String("error", err.Error()))
+	}
 	slog.Info(consts.APPNAME + " stopped.")
 }
 

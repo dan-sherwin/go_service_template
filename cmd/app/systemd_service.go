@@ -2,10 +2,11 @@ package app
 
 import (
 	"fmt"
-	"github.com/takama/daemon"
 	"log/slog"
 	"os"
 	"runtime"
+
+	"github.com/takama/daemon"
 	"scm.dev.dsherwin.net/dsherwin/go_service_template/cmd/app/consts"
 )
 
@@ -55,86 +56,86 @@ func setupSystemdService() {
 
 func (i *InstallServiceCommand) Run() error {
 	slog.Info("systemd install requested")
-	if status, err := systemdService.Install("run"); err != nil {
+	status, err := systemdService.Install("run")
+	if err != nil {
 		slog.Error("systemd install failed", slog.String("error", err.Error()))
 		return err
-	} else {
-		fmt.Println(status)
-		slog.Info("systemd install", slog.String("status", status))
 	}
+	fmt.Println(status)
+	slog.Info("systemd install", slog.String("status", status))
 	return nil
 }
 
 func (r *RemoveServiceCommand) Run() error {
 	slog.Info("systemd remove requested")
-	if status, err := systemdService.Remove(); err != nil {
+	status, err := systemdService.Remove()
+	if err != nil {
 		slog.Error("systemd remove failed", slog.String("error", err.Error()))
 		return err
-	} else {
-		fmt.Println(status)
-		slog.Info("systemd remove", slog.String("status", status))
 	}
+	fmt.Println(status)
+	slog.Info("systemd remove", slog.String("status", status))
 	return nil
 }
 
 func (s *StartServiceCommand) Run() error {
 	slog.Info("systemd start requested")
-	if status, err := systemdService.Start(); err != nil {
+	status, err := systemdService.Start()
+	if err != nil {
 		slog.Error("systemd start failed", slog.String("error", err.Error()))
 		return err
-	} else {
-		fmt.Println(status)
-		slog.Info("systemd start", slog.String("status", status))
 	}
+	fmt.Println(status)
+	slog.Info("systemd start", slog.String("status", status))
 	return nil
 }
 
 func (k *StopServiceCommand) Run() error {
 	slog.Info("systemd stop requested")
-	if status, err := systemdService.Stop(); err != nil {
+	status, err := systemdService.Stop()
+	if err != nil {
 		slog.Error("systemd stop failed", slog.String("error", err.Error()))
 		return err
-	} else {
-		fmt.Println(status)
-		slog.Info("systemd stop", slog.String("status", status))
 	}
+	fmt.Println(status)
+	slog.Info("systemd stop", slog.String("status", status))
 	return nil
 }
 
 func (r *RestartServiceCommand) Run() error {
 	slog.Info("systemd restart requested")
-	if status, err := systemdService.ReStart(); err != nil {
+	status, err := systemdService.ReStart()
+	if err != nil {
 		slog.Error("systemd restart failed", slog.String("error", err.Error()))
 		return err
-	} else {
-		for _, s := range status {
-			fmt.Println(s)
-		}
-		slog.Info("systemd restart", slog.Any("status", status))
 	}
+	for _, s := range status {
+		fmt.Println(s)
+	}
+	slog.Info("systemd restart", slog.Any("status", status))
 	return nil
 }
 
 func (s *ServiceStatusCommand) Run() error {
 	slog.Info("systemd status requested")
-	if status, err := systemdService.Status(); err != nil {
+	status, err := systemdService.Status()
+	if err != nil {
 		slog.Error("systemd status failed", slog.String("error", err.Error()))
 		return err
-	} else {
-		fmt.Println(status)
-		slog.Info("systemd status", slog.String("status", status))
 	}
+	fmt.Println(status)
+	slog.Info("systemd status", slog.String("status", status))
 	return nil
 }
 
 func (s *SystemService) ReStart() (statuses []string, err error) {
 	var status string
-	status, err = s.Daemon.Stop()
+	status, err = s.Stop()
 	if err != nil {
 		return
 	}
 	statuses = append(statuses, status)
-	status, err = s.Daemon.Start()
+	status, err = s.Start()
 	if err != nil {
 		return
 	}

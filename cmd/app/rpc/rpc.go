@@ -116,6 +116,10 @@ func Call(serviceMethod string, args any, reply any) error {
 		slog.Error(msg, slog.String("error", err.Error()))
 		os.Exit(1)
 	}
-	defer client.Close()
+	defer func() {
+		if err := client.Close(); err != nil {
+			slog.Debug("Failed to close RPC client", slog.String("error", err.Error()))
+		}
+	}()
 	return client.Call(serviceMethod, args, reply)
 }

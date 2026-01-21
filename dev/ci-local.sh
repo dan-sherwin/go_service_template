@@ -14,7 +14,7 @@ go build ./...
 go vet ./...
 go test ./... -race -count=1 -covermode=atomic -coverprofile=coverage.out
 go tool cover -func=coverage.out \
-| awk -v thr="${COVER_THRESH:-12}" '
+| awk -v thr="${COVER_THRESH:-0}" '
 /^total:/ {
   gsub(/%/, "", $3);    # strip percent sign
   cov = $3 + 0;

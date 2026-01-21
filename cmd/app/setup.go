@@ -65,10 +65,13 @@ func init() {
 func Setup() {
 	setWorkingDir()
 	slog.Debug("working directory set")
-	app_settings.Setup(consts.APPNAME+".db", app_settings.SettingsOptions{
+	if err := app_settings.Setup(consts.APPNAME+".db", app_settings.SettingsOptions{
 		RpcSocketPathToListRunningSettings: rpc.SocketPath,
 		KongVars:                           &vars,
-	})
+	}); err != nil {
+		slog.Error("Failed to setup settings", slog.String("error", err.Error()))
+		os.Exit(1)
+	}
 	utilities.MergeInto(vars, foo.CommandVars())
 	processCLI()
 	LoggingLevel = cliConfig.Logging.Level
@@ -83,7 +86,10 @@ func SetupDaemon() {
 	signal.Notify(shuttingDown, syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGINT, syscall.SIGHUP)
 	systemdata.StartSystemDataUpdates()
 	startAppPump()
-	rpc.StartServer()
+	if err := rpc.StartServer(); err != nil {
+		slog.Error("Failed to start RPC server", slog.String("error", err.Error()))
+		os.Exit(1)
+	}
 	slog.Info("daemon setup complete")
 }
 
