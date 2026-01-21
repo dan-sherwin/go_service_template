@@ -160,7 +160,41 @@ func main() {
 		}
 	}
 
+	// 9) Update ci-local.sh and .golangci.yml if they exist
+	updateCIConfig(cwd, oldModule, newModule)
+
 	fmt.Println("Bootstrap completed successfully.")
+}
+
+func updateCIConfig(cwd, oldModule, newModule string) {
+	if newModule == "" || newModule == oldModule {
+		return
+	}
+
+	// Update .golangci.yml
+	golangciPath := filepath.Join(cwd, ".golangci.yml")
+	if b, err := os.ReadFile(golangciPath); err == nil {
+		orig := string(b)
+		// Replace old module path if it appears in path exclusions or rules
+		repl := strings.ReplaceAll(orig, oldModule, newModule)
+		if repl != orig {
+			if err := os.WriteFile(golangciPath, []byte(repl), 0o644); err == nil {
+				fmt.Println("Updated .golangci.yml")
+			}
+		}
+	}
+
+	// Update dev/ci-local.sh
+	ciLocalPath := filepath.Join(cwd, "dev", "ci-local.sh")
+	if b, err := os.ReadFile(ciLocalPath); err == nil {
+		orig := string(b)
+		repl := strings.ReplaceAll(orig, oldModule, newModule)
+		if repl != orig {
+			if err := os.WriteFile(ciLocalPath, []byte(repl), 0o644); err == nil {
+				fmt.Println("Updated dev/ci-local.sh")
+			}
+		}
+	}
 }
 
 func check(err error, context string) {
