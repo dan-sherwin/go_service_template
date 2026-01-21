@@ -31,7 +31,7 @@ func setDefaultLogger(base *slog.Logger) {
 		slog.String("app", consts.APPNAME),
 		slog.String("version", consts.Version),
 		slog.String("commit", consts.Commit),
-		slog.String("build_date", consts.BuildDate),
+		slog.String("buildDate", consts.BuildDate),
 	)
 	slog.SetDefault(child)
 }

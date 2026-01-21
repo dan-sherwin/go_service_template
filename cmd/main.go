@@ -8,8 +8,8 @@ import (
 	"scm.dev.dsherwin.net/dsherwin/go_service_template/cmd/app"
 	"scm.dev.dsherwin.net/dsherwin/go_service_template/cmd/app/consts"
 
-	"go.corp.spacelink.com/sdks/go/rest_api_server"
-	"go.corp.spacelink.com/sdks/go/utilities"
+	"github.com/dan-sherwin/go-rest-api-server"
+	"github.com/dan-sherwin/go-utilities"
 )
 
 func main() {
@@ -27,10 +27,12 @@ func main() {
 		return
 	}
 	app.SetupDaemon()
-	rest_api_server.StartHttpServer()
-	slog.Info("http server started", slog.String("addr", rest_api_server.ListeningAddress))
+	restapi.StartHttpServer()
+	slog.Info("http server started", slog.String("addr", restapi.ListeningAddress))
 	slog.Info(consts.APPNAME + " is running.")
-	select {}
+	app.WaitForShutdown()
+	restapi.ShutdownHttpServer()
+	slog.Info(consts.APPNAME + " stopped.")
 }
 
 func processCommand() {

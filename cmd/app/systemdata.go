@@ -47,9 +47,9 @@ func (f *SystemDataCommand) GetSystemData(_ *struct{}, data *string) error {
 }
 
 const systemDataFormat = `
-Alloc: %s
-SystemAlloc: %s
-NumGoRoutines: %d
-NumCPUs: %d
-CPUPercent: %.1f
+Alloc:          %s
+SystemAlloc:    %s
+NumGoRoutines:  %d
+NumCPUs:        %d
+CPUPercent:     %.1f
 `

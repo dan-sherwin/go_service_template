@@ -10,7 +10,7 @@ import (
 
 	"scm.dev.dsherwin.net/dsherwin/go_service_template/cmd/app/consts"
 
-	"go.corp.spacelink.com/sdks/go/utilities"
+	"github.com/dan-sherwin/go-utilities"
 )
 
 var (

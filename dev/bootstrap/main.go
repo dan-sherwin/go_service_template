@@ -121,6 +121,7 @@ func main() {
 			repl = strings.ReplaceAll(repl, oldModule+"/cmd/app/consts.Version", newModule+"/cmd/app/consts.Version")
 			repl = strings.ReplaceAll(repl, oldModule+"/cmd/app/consts.Commit", newModule+"/cmd/app/consts.Commit")
 			repl = strings.ReplaceAll(repl, oldModule+"/cmd/app/consts.BuildDate", newModule+"/cmd/app/consts.BuildDate")
+			repl = strings.ReplaceAll(repl, oldModule+"/cmd/app/consts", newModule+"/cmd/app/consts")
 		}
 		if repl != orig {
 			err = os.WriteFile(teamCityPath, []byte(repl), 0o644)
@@ -331,14 +332,18 @@ func updateReadme(cwd, oldModule, newModule, newApp string) {
 	b.WriteString("- Set log level via CLI or environment\n\n")
 
 	b.WriteString("## RPC\n")
-	b.WriteString("- Unix domain socket: /var/run/")
+	b.WriteString("- Unix domain socket: ")
+	b.WriteString(pick(os.Getenv("XDG_RUNTIME_DIR"), "/tmp"))
+	b.WriteString("/")
 	b.WriteString(appName)
-	b.WriteString(".socket (0660 perms)\n")
+	b.WriteString("/")
+	b.WriteString(appName)
+	b.WriteString("-rpc.sock (0660 perms)\n")
 	b.WriteString("- Start server as part of daemon run path; client helpers dial per call and close\n\n")
 
 	b.WriteString("## HTTP\n")
 	b.WriteString("- HTTP server starts after daemon setup; add your endpoints as needed\n")
-	b.WriteString("- Consider adding /healthz and /ready\n\n")
+	b.WriteString("- Health checks: /healthz and /ready endpoints are registered by default\n\n")
 
 	b.WriteString("## Systemd integration\n")
 	b.WriteString("- Install/remove/start/stop/status via CLI under the Systemd command group\n")

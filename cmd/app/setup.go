@@ -13,9 +13,9 @@ import (
 	"scm.dev.dsherwin.net/dsherwin/go_service_template/cmd/app/systemdata"
 	"scm.dev.dsherwin.net/dsherwin/go_service_template/internal/foo"
 
-	"go.corp.spacelink.com/sdks/go/app_settings"
-	"go.corp.spacelink.com/sdks/go/rest_api_server"
-	"go.corp.spacelink.com/sdks/go/utilities"
+	"github.com/dan-sherwin/go-app-settings"
+	"github.com/dan-sherwin/go-rest-api-server"
+	"github.com/dan-sherwin/go-utilities"
 )
 
 func init() {
@@ -24,11 +24,11 @@ func init() {
 			if s == "" {
 				return fmt.Errorf("HTTP Listening Address cannot be empty")
 			}
-			rest_api_server.ListeningAddress = s
+			restapi.ListeningAddress = s
 			return nil
 		},
 		GetFunc: func() string {
-			return rest_api_server.ListeningAddress
+			return restapi.ListeningAddress
 		},
 		Name:        "http_listening_address",
 		Description: "HTTP Listening address",
@@ -73,7 +73,7 @@ func Setup() {
 	processCLI()
 	LoggingLevel = cliConfig.Logging.Level
 	initLogger()
-	slog.Info("build info", slog.String("version", consts.Version), slog.String("commit", consts.Commit), slog.String("build_date", consts.BuildDate))
+	slog.Info("build info", slog.String("version", consts.Version), slog.String("commit", consts.Commit), slog.String("buildDate", consts.BuildDate))
 	setupSystemdService()
 }
 

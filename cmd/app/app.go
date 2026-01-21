@@ -28,6 +28,11 @@ func startAppPump() {
 		slog.Info("Shutting down from signal", slog.String("signal", sigChan.String()))
 		systemdata.StopSystemDataUpdates()
 		rpc.Shutdown()
-		os.Exit(0)
+		// Signal main loop to exit if it's waiting
+		close(shuttingDown)
 	}()
+}
+
+func WaitForShutdown() {
+	<-shuttingDown
 }

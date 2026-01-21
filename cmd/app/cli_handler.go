@@ -6,8 +6,8 @@ import (
 	"scm.dev.dsherwin.net/dsherwin/go_service_template/cmd/app/consts"
 
 	"github.com/alecthomas/kong"
+	"github.com/dan-sherwin/go-app-settings"
 	"github.com/willabides/kongplete"
-	"go.corp.spacelink.com/sdks/go/app_settings"
 )
 
 type (

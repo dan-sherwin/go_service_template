@@ -1,6 +1,6 @@
 package foo
 
-import "go.corp.spacelink.com/sdks/go/app_settings"
+import "github.com/dan-sherwin/go-app-settings"
 
 type (
 	Feebar struct{}

@@ -17,7 +17,7 @@ type (
 
 func (b *BuildInfoCommand) Run() error {
 	if bi, ok := debug.ReadBuildInfo(); ok {
-		fmt.Printf("\nApp Name: %s\nGo Version: %s\nApp Version: %s\nCommit: %s\nBuildDate: %s\nPath: %s\nModuleVersion: %s\n", consts.APPNAME, bi.GoVersion, consts.Version, consts.Commit, consts.BuildDate, bi.Path, bi.Main.Version)
+		fmt.Printf("\nApp Name: %s\nGo Version: %s\nApp Version: %s\nCommit: %s\nBuild Date: %s\nPath: %s\nModule Version: %s\n", consts.APPNAME, bi.GoVersion, consts.Version, consts.Commit, consts.BuildDate, bi.Path, bi.Main.Version)
 		for _, s := range bi.Settings {
 			if strings.HasPrefix(s.Key, "-") {
 				continue
