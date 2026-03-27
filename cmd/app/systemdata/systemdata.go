@@ -2,10 +2,11 @@ package systemdata
 
 import (
 	"fmt"
-	"github.com/shirou/gopsutil/v3/cpu"
 	"log/slog"
 	"runtime"
 	"time"
+
+	"github.com/shirou/gopsutil/v4/cpu"
 )
 
 type (
