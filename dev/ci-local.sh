@@ -2,6 +2,8 @@
 set -euo pipefail
 trap "rm -f coverage.out" EXIT
 
+export GOTOOLCHAIN="${GOTOOLCHAIN:-go1.26.2}"
+
 # Ensure tools exist
 command -v golangci-lint >/dev/null 2>&1 || go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
 command -v govulncheck >/dev/null 2>&1 || go install golang.org/x/vuln/cmd/govulncheck@latest

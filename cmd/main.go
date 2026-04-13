@@ -44,6 +44,7 @@ func processCommand() {
 	slog.Info("Command called", "command", app.CLICommand.Command())
 	if err := app.CLICommand.Run(); err != nil {
 		slog.Error("Error running command", "error", err)
+		os.Exit(1)
 	}
 	os.Exit(0)
 }

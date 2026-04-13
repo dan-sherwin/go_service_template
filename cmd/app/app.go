@@ -6,7 +6,7 @@ import (
 	"os/signal"
 	"scm.dev.dsherwin.net/dsherwin/go_service_template/cmd/app/rpc"
 	"scm.dev.dsherwin.net/dsherwin/go_service_template/cmd/app/systemdata"
-	"syscall"
+	"sync"
 )
 
 type (
@@ -17,22 +17,29 @@ type (
 )
 
 var (
-	shuttingDown = make(chan os.Signal, 1)
+	shutdownSignals = make(chan os.Signal, 1)
+	shutdownDone    = make(chan struct{})
+	shutdownOnce    sync.Once
 )
 
 func startAppPump() {
-	signal.Notify(shuttingDown, os.Interrupt, syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGHUP)
 	slog.Debug("Starting signal handler")
 	go func() {
-		sigChan := <-shuttingDown
+		sigChan := <-shutdownSignals
 		slog.Info("Shutting down from signal", slog.String("signal", sigChan.String()))
-		systemdata.StopSystemDataUpdates()
-		rpc.Shutdown()
-		// Signal main loop to exit if it's waiting
-		close(shuttingDown)
+		shutdown()
 	}()
 }
 
+func shutdown() {
+	shutdownOnce.Do(func() {
+		signal.Stop(shutdownSignals)
+		systemdata.StopSystemDataUpdates()
+		rpc.Shutdown()
+		close(shutdownDone)
+	})
+}
+
 func WaitForShutdown() {
-	<-shuttingDown
+	<-shutdownDone
 }

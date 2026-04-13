@@ -83,7 +83,7 @@ func Setup() {
 func SetupDaemon() {
 	slog.Debug(consts.APPNAME + " app daemon setup")
 	// Signals handled in startAppPump; avoid SIGKILL which cannot be trapped
-	signal.Notify(shuttingDown, syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGINT, syscall.SIGHUP)
+	signal.Notify(shutdownSignals, syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGINT, syscall.SIGHUP)
 	systemdata.StartSystemDataUpdates()
 	startAppPump()
 	if err := rpc.StartServer(); err != nil {

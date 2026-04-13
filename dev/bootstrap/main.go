@@ -4,7 +4,6 @@ package main
 import (
 	"bytes"
 	"errors"
-	"flag"
 	"fmt"
 	"go/parser"
 	"go/printer"
@@ -23,18 +22,13 @@ import (
 // Usage examples:
 //
 //	go run ./dev/bootstrap foo_bar
-//	go run ./dev/bootstrap foo_bar -dry-run
+//	go run ./dev/bootstrap -dry-run foo_bar
 func main() {
-	flagDryRun := flag.Bool("dry-run", false, "show planned changes without writing")
-	flag.Parse()
-
-	// Expect exactly one positional argument: the app name (also used as module path)
-	args := flag.Args()
-	if len(args) != 1 {
-		fmt.Fprintln(os.Stderr, "usage: go run ./dev/bootstrap <app_name> [-dry-run]")
+	flagDryRun, appName, err := parseArgs(os.Args[1:])
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err.Error())
 		os.Exit(2)
 	}
-	appName := args[0]
 	newModule := appName
 	newApp := appName
 
@@ -64,7 +58,7 @@ func main() {
 	for _, p := range plan {
 		fmt.Println(" -", p)
 	}
-	if *flagDryRun {
+	if flagDryRun {
 		fmt.Println("Dry run requested; no files will be modified.")
 		return
 	}
@@ -165,6 +159,28 @@ func main() {
 	updateCIConfig(cwd, oldModule, newModule)
 
 	fmt.Println("Bootstrap completed successfully.")
+}
+
+func parseArgs(args []string) (dryRun bool, appName string, err error) {
+	var positionals []string
+	for _, arg := range args {
+		switch arg {
+		case "-dry-run", "--dry-run":
+			dryRun = true
+		case "-h", "--help", "help":
+			return false, "", fmt.Errorf("usage: go run ./dev/bootstrap [-dry-run] <app_name>")
+		default:
+			if strings.HasPrefix(arg, "-") {
+				return false, "", fmt.Errorf("unknown flag: %s\nusage: go run ./dev/bootstrap [-dry-run] <app_name>", arg)
+			}
+			positionals = append(positionals, arg)
+		}
+	}
+
+	if len(positionals) != 1 {
+		return false, "", fmt.Errorf("usage: go run ./dev/bootstrap [-dry-run] <app_name>")
+	}
+	return dryRun, positionals[0], nil
 }
 
 func updateCIConfig(cwd, oldModule, newModule string) {
@@ -378,7 +394,7 @@ func updateReadme(cwd, oldModule, newModule, newApp string) {
 
 	b.WriteString("## HTTP\n")
 	b.WriteString("- HTTP server starts after daemon setup; add your endpoints as needed\n")
-	b.WriteString("- Health checks: /healthz and /ready endpoints are registered by default\n\n")
+	b.WriteString("- Configure the listening address through settings or CLI as needed\n\n")
 
 	b.WriteString("## Systemd integration\n")
 	b.WriteString("- Install/remove/start/stop/status via CLI under the Systemd command group\n")
@@ -390,6 +406,10 @@ func updateReadme(cwd, oldModule, newModule, newApp string) {
 	b.WriteString("## CI\n")
 	b.WriteString("- .teamcity/settings.kts contains a build that runs go mod tidy, go vet, go test -race, and a Linux/amd64 build with ldflags\n")
 	b.WriteString("- Optional Deploy configuration can use rsync/SSH and systemctl restart; set parameters as needed (dest_user, dest_host, dest_path)\n\n")
+
+	b.WriteString("## Local quality gate\n")
+	b.WriteString("- Run `./dev/ci-local.sh` for the local validation pass: go mod tidy, go build, go vet, go test -race, golangci-lint, govulncheck, and gofmt -s\n")
+	b.WriteString("- The script defaults GOTOOLCHAIN to go1.26.2 unless you override it in the environment\n\n")
 
 	content := b.String()
 	if err := os.WriteFile(readmePath, []byte(content), 0o644); err == nil {

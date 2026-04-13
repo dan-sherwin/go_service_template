@@ -16,32 +16,32 @@ This repository is a reusable template for building small Go daemons/CLIs. It pr
 On macOS, this template is intended for development; production artifacts target Linux.
 
 ## Quick start (using the bootstrap tool)
-
-First and foremost, you need to run ```go mod tidy``` to initialize the module.
-
 Run the bootstrap helper to safely rename the module and runtime app name.
 
 Examples:
 - Create a new app named your_app (sets both module path and APPNAME to your_app):
   go run ./dev/bootstrap your_app
 - Preview planned changes without modifying files:
-  go run ./dev/bootstrap your_app -dry-run
+  go run ./dev/bootstrap -dry-run your_app
 
 What the bootstrap tool does:
 - Updates go.mod module path and rewrites Go imports that reference the old module path (AST-safe).
 - Sets const APPNAME in cmd/app/consts/consts.go.
+- Rewrites README.md with app-specific starter content.
+- Updates GoLand run configurations under `dev/runConfigurations`.
 - Updates .teamcity/settings.kts:
   - param("app.name", "...")
   - the project description ("CI for ...")
   - ldflags import paths to match the new module
-- Runs go mod tidy
-- Optionally, it can be extended to update IDE files, but by default it does NOT touch .idea.
+- Runs go mod tidy.
+- Updates `.gormdb2struct.toml`, `.golangci.yml`, and `dev/ci-local.sh` where the old module path appears.
 
 After bootstrapping:
 1) Open the project in GoLand; it will re-index automatically.
 2) Build and test:
    go build ./...
    go test -race ./...
+   ./dev/ci-local.sh
 3) Update any environment-specific settings (e.g., Deploy target in .teamcity/settings.kts) as needed.
 
 ## Building and running locally
@@ -78,6 +78,10 @@ The binary exposes a CLI with commands registered under cmd/app/commands. See in
 ## Versioning
 - Build info is injected via -ldflags into cmd/app/consts (Version, Commit, BuildDate) and shown by the hidden buildinfo command
 
+## Local quality gate
+- `dev/ci-local.sh` runs the local validation pass: `go mod tidy`, `go build`, `go vet`, `go test -race`, `golangci-lint`, `govulncheck`, and `gofmt -s`.
+- The script defaults `GOTOOLCHAIN` to `go1.26.2`, matching the latest Go release at the time this template was updated.
+
 ## TeamCity CI/CD
 - .teamcity/settings.kts contains a Build configuration:
   - go mod tidy, go vet, go test -race, and a Linux/amd64 build with ldflags
@@ -95,5 +99,3 @@ The binary exposes a CLI with commands registered under cmd/app/commands. See in
   - Any imports referencing internal/foo
 - Prefer the bootstrap tool to rename this template rather than search/replace.
 - See .junie/guidelines.md for project conventions.
-
-
