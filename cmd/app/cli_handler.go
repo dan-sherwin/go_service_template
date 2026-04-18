@@ -16,8 +16,7 @@ type (
 		Commands
 		Run RunCommand `cmd:"" help:"Run application in foreground"`
 		ServiceDef
-		InstallCompletions kongplete.InstallCompletions `cmd:"" name:"completionscript" help:"Install shell completions (bash|zsh|fish)." hidden:""`
-		Verbose            bool                         `short:"v" help:"Enable verbose output to stdout"`
+		Verbose bool `short:"v" help:"Enable verbose output to stdout"`
 	}
 )
 

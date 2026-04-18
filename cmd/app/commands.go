@@ -11,6 +11,7 @@ type (
 		SystemDataCommandDef
 		foo.FooCommandDef
 		RecorderCommandDef
+		Completions CompletionsCommandDef `cmd:"" name:"autoCompletions" help:"Manage shell completions"`
 	}
 )
 
