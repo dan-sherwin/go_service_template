@@ -380,14 +380,10 @@ func updateReadme(cwd, oldModule, newModule, newApp string) {
 	b.WriteString("- Linux: slog handler writes to journald (see cmd/app/logger_linux.go)\n")
 	b.WriteString("- macOS: slog uses TextHandler to stdout (see cmd/app/logger_darwin.go)\n")
 	b.WriteString("- Standard log keys: app, version, pid, user, component, error\n")
-	b.WriteString("- Set log level via CLI or environment\n\n")
+	b.WriteString("- Set log level via CLI or settings\n\n")
 
 	b.WriteString("## RPC\n")
-	b.WriteString("- Unix domain socket: ")
-	b.WriteString(pick(os.Getenv("XDG_RUNTIME_DIR"), "/tmp"))
-	b.WriteString("/")
-	b.WriteString(appName)
-	b.WriteString("/")
+	b.WriteString("- Unix domain socket: /tmp/")
 	b.WriteString(appName)
 	b.WriteString("-rpc.sock (0660 perms)\n")
 	b.WriteString("- Start server as part of daemon run path; client helpers dial per call and close\n\n")
@@ -409,7 +405,7 @@ func updateReadme(cwd, oldModule, newModule, newApp string) {
 
 	b.WriteString("## Local quality gate\n")
 	b.WriteString("- Run `./dev/ci-local.sh` for the local validation pass: go mod tidy, go build, go vet, go test -race, golangci-lint, govulncheck, and gofmt -s\n")
-	b.WriteString("- The script defaults GOTOOLCHAIN to go1.26.2 unless you override it in the environment\n\n")
+	b.WriteString("- The script pins the local Go toolchain default to go1.26.2\n\n")
 
 	content := b.String()
 	if err := os.WriteFile(readmePath, []byte(content), 0o644); err == nil {

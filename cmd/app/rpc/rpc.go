@@ -20,12 +20,6 @@ var (
 )
 
 func DefaultSocketPath() string {
-	if p := os.Getenv("RPC_SOCKET_PATH"); p != "" {
-		return p
-	}
-	if r := os.Getenv("XDG_RUNTIME_DIR"); r != "" {
-		return filepath.Join(r, consts.APPNAME, consts.APPNAME+"-rpc.sock")
-	}
 	return filepath.Join(os.TempDir(), consts.APPNAME+"-rpc.sock")
 }
 

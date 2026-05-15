@@ -42,7 +42,7 @@ After bootstrapping:
    go build ./...
    go test -race ./...
    ./dev/ci-local.sh
-3) Update any environment-specific settings (e.g., Deploy target in .teamcity/settings.kts) as needed.
+3) Update any deployment-specific settings (e.g., Deploy target in .teamcity/settings.kts) as needed.
 
 ## Building and running locally
 - macOS/Linux (dev):
@@ -61,10 +61,10 @@ The binary exposes a CLI with commands registered under cmd/app/commands. See in
 - Linux: slog handler writes to journald via cmd/app/logger_linux.go
 - macOS: slog uses TextHandler to stdout via cmd/app/logger_darwin.go
 - Standard log keys: app, version, pid, user, component, error
-- Set log level via CLI or settings (LOG_LEVEL env can override if you wire it)
+- Set log level via CLI or settings
 
 ## RPC
-- Unix domain socket: /var/run/<APPNAME>.socket (0660 perms)
+- Unix domain socket: `/tmp/<APPNAME>-rpc.sock` (0660 perms)
 - Start server as part of daemon run path; client helpers dial per call and close
 
 ## HTTP
@@ -80,7 +80,7 @@ The binary exposes a CLI with commands registered under cmd/app/commands. See in
 
 ## Local quality gate
 - `dev/ci-local.sh` runs the local validation pass: `go mod tidy`, `go build`, `go vet`, `go test -race`, `golangci-lint`, `govulncheck`, and `gofmt -s`.
-- The script defaults `GOTOOLCHAIN` to `go1.26.2`, matching the latest Go release at the time this template was updated.
+- The script pins the local Go toolchain default to `go1.26.2`, matching the latest Go release at the time this template was updated.
 
 ## TeamCity CI/CD
 - .teamcity/settings.kts contains a Build configuration:

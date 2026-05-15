@@ -8,24 +8,14 @@ import (
 	"scm.dev.dsherwin.net/dsherwin/go_service_template/cmd/app/consts"
 )
 
-func TestDefaultSocketPathUsesXDGRuntimeDir(t *testing.T) {
-	t.Setenv("RPC_SOCKET_PATH", "")
+func TestDefaultSocketPathIgnoresSessionEnvironment(t *testing.T) {
+	t.Setenv("RPC_SOCKET_PATH", "/tmp/custom.sock")
 	t.Setenv("XDG_RUNTIME_DIR", "/tmp/chronix-runtime")
 
 	got := DefaultSocketPath()
-	want := filepath.Join("/tmp/chronix-runtime", consts.APPNAME, consts.APPNAME+"-rpc.sock")
+	want := filepath.Join(os.TempDir(), consts.APPNAME+"-rpc.sock")
 	if got != want {
 		t.Fatalf("unexpected socket path: got %q want %q", got, want)
-	}
-}
-
-func TestDefaultSocketPathUsesExplicitRPCSocketPath(t *testing.T) {
-	t.Setenv("RPC_SOCKET_PATH", "/tmp/custom.sock")
-	t.Setenv("XDG_RUNTIME_DIR", "/tmp/ignored-runtime")
-
-	got := DefaultSocketPath()
-	if got != "/tmp/custom.sock" {
-		t.Fatalf("unexpected explicit socket path: got %q", got)
 	}
 }
 
