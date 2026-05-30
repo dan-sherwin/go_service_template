@@ -5,7 +5,7 @@ go 1.26.2
 require (
 	github.com/alecthomas/kong v1.15.0
 	github.com/bcicen/go-units v1.0.5
-	github.com/dan-sherwin/go-app-runtime v0.1.0
+	github.com/dan-sherwin/go-app-runtime v0.2.0
 	github.com/dan-sherwin/go-app-settings v0.4.1
 	github.com/dan-sherwin/go-applog v0.2.0
 	github.com/dan-sherwin/go-rest-api-server v0.6.1
@@ -29,8 +29,7 @@ require (
 	github.com/clipperhouse/uax29/v2 v2.7.0 // indirect
 	github.com/cloudwego/base64x v0.1.6 // indirect
 	github.com/coreos/go-systemd/v22 v22.7.0 // indirect
-	github.com/dan-sherwin/devlogbus v0.1.5 // indirect
-	github.com/dan-sherwin/go-devlogbus v0.1.1 // indirect
+	github.com/dan-sherwin/devlogbus v1.1.0 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/ebitengine/purego v0.10.0 // indirect
 	github.com/fatih/color v1.18.0 // indirect
