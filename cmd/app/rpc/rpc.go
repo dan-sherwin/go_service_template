@@ -3,7 +3,7 @@ package rpc
 import (
 	"errors"
 	"fmt"
-	"log/slog"
+	"github.com/dan-sherwin/go-applog"
 	"net"
 	"net/rpc"
 	"os"
@@ -30,7 +30,7 @@ func init() {
 func Register(rcvr any) {
 	err := rpc.Register(rcvr)
 	if err != nil {
-		slog.Error("Register error", slog.String("error", err.Error()))
+		applog.Error("Register error", applog.String("error", err.Error()))
 		os.Exit(1)
 	}
 }
@@ -38,7 +38,7 @@ func Register(rcvr any) {
 func RegisterName(name string, rcvr any) {
 	err := rpc.RegisterName(name, rcvr)
 	if err != nil {
-		slog.Error("Register error", slog.String("error", err.Error()))
+		applog.Error("Register error", applog.String("error", err.Error()))
 		os.Exit(1)
 	}
 }
@@ -46,12 +46,12 @@ func RegisterName(name string, rcvr any) {
 func Shutdown() {
 	if listener != nil {
 		if err := listener.Close(); err != nil && !errors.Is(err, net.ErrClosed) {
-			slog.Debug("RPC listener close failed", slog.String("error", err.Error()))
+			applog.Debug("RPC listener close failed", applog.String("error", err.Error()))
 		}
 		listener = nil
 	}
 	if err := os.Remove(SocketPath); err != nil && !errors.Is(err, os.ErrNotExist) {
-		slog.Debug("RPC socket cleanup failed", slog.String("socket", SocketPath), slog.String("error", err.Error()))
+		applog.Debug("RPC socket cleanup failed", applog.String("socket", SocketPath), applog.String("error", err.Error()))
 	}
 }
 
@@ -72,16 +72,16 @@ func StartServer() error {
 		listener = nil
 		return fmt.Errorf("chmod rpc socket %s: %w", SocketPath, err)
 	}
-	slog.Info("RPC server listening", slog.String("socket", SocketPath))
+	applog.Info("RPC server listening", applog.String("socket", SocketPath))
 	go func() {
 		for {
 			conn, err := listener.Accept()
 			if err != nil {
 				if errors.Is(err, net.ErrClosed) {
-					slog.Info("RPC listener closing")
+					applog.Info("RPC listener closing")
 					return
 				}
-				slog.Error("RPC accept error", slog.String("error", err.Error()))
+				applog.Error("RPC accept error", applog.String("error", err.Error()))
 				continue
 			}
 			go rpc.ServeConn(conn)
@@ -112,7 +112,7 @@ func Call(serviceMethod string, args any, reply any) error {
 	}
 	defer func() {
 		if err := client.Close(); err != nil {
-			slog.Debug("Failed to close RPC client", slog.String("error", err.Error()))
+			applog.Debug("Failed to close RPC client", applog.String("error", err.Error()))
 		}
 	}()
 	return client.Call(serviceMethod, args, reply)

@@ -2,7 +2,7 @@ package app
 
 import (
 	"fmt"
-	"log/slog"
+	"github.com/dan-sherwin/go-applog"
 	"os"
 	"runtime"
 
@@ -55,76 +55,76 @@ func setupSystemdService() {
 }
 
 func (i *InstallServiceCommand) Run() error {
-	slog.Info("systemd install requested")
+	applog.Info("systemd install requested")
 	status, err := systemdService.Install("run")
 	if err != nil {
-		slog.Error("systemd install failed", slog.String("error", err.Error()))
+		applog.Error("systemd install failed", applog.String("error", err.Error()))
 		return err
 	}
 	fmt.Println(status)
-	slog.Info("systemd install", slog.String("status", status))
+	applog.Info("systemd install", applog.String("status", status))
 	return nil
 }
 
 func (r *RemoveServiceCommand) Run() error {
-	slog.Info("systemd remove requested")
+	applog.Info("systemd remove requested")
 	status, err := systemdService.Remove()
 	if err != nil {
-		slog.Error("systemd remove failed", slog.String("error", err.Error()))
+		applog.Error("systemd remove failed", applog.String("error", err.Error()))
 		return err
 	}
 	fmt.Println(status)
-	slog.Info("systemd remove", slog.String("status", status))
+	applog.Info("systemd remove", applog.String("status", status))
 	return nil
 }
 
 func (s *StartServiceCommand) Run() error {
-	slog.Info("systemd start requested")
+	applog.Info("systemd start requested")
 	status, err := systemdService.Start()
 	if err != nil {
-		slog.Error("systemd start failed", slog.String("error", err.Error()))
+		applog.Error("systemd start failed", applog.String("error", err.Error()))
 		return err
 	}
 	fmt.Println(status)
-	slog.Info("systemd start", slog.String("status", status))
+	applog.Info("systemd start", applog.String("status", status))
 	return nil
 }
 
 func (k *StopServiceCommand) Run() error {
-	slog.Info("systemd stop requested")
+	applog.Info("systemd stop requested")
 	status, err := systemdService.Stop()
 	if err != nil {
-		slog.Error("systemd stop failed", slog.String("error", err.Error()))
+		applog.Error("systemd stop failed", applog.String("error", err.Error()))
 		return err
 	}
 	fmt.Println(status)
-	slog.Info("systemd stop", slog.String("status", status))
+	applog.Info("systemd stop", applog.String("status", status))
 	return nil
 }
 
 func (r *RestartServiceCommand) Run() error {
-	slog.Info("systemd restart requested")
+	applog.Info("systemd restart requested")
 	status, err := systemdService.ReStart()
 	if err != nil {
-		slog.Error("systemd restart failed", slog.String("error", err.Error()))
+		applog.Error("systemd restart failed", applog.String("error", err.Error()))
 		return err
 	}
 	for _, s := range status {
 		fmt.Println(s)
 	}
-	slog.Info("systemd restart", slog.Any("status", status))
+	applog.Info("systemd restart", applog.Any("status", status))
 	return nil
 }
 
 func (s *ServiceStatusCommand) Run() error {
-	slog.Info("systemd status requested")
+	applog.Info("systemd status requested")
 	status, err := systemdService.Status()
 	if err != nil {
-		slog.Error("systemd status failed", slog.String("error", err.Error()))
+		applog.Error("systemd status failed", applog.String("error", err.Error()))
 		return err
 	}
 	fmt.Println(status)
-	slog.Info("systemd status", slog.String("status", status))
+	applog.Info("systemd status", applog.String("status", status))
 	return nil
 }
 

@@ -6,7 +6,8 @@ This repository is a reusable template for building small Go daemons/CLIs. It pr
 - CLI commands via Kong
 - A Unix RPC server (net/rpc over a Unix domain socket)
 - An HTTP server (via rest_api_server) you can extend with endpoints
-- Structured logging with slog (Journald on Linux; Text to stdout on macOS)
+- Application logging through github.com/dan-sherwin/go-applog
+- Runtime logging/settings/DevLogBus integration through github.com/dan-sherwin/go-app-runtime
 - System data sampling (goroutine count, memory, CPU%)
 - Systemd integration using takama/daemon
 - Settings persistence via app_settings
@@ -58,10 +59,11 @@ The binary exposes a CLI with commands registered under cmd/app/commands. See in
     utilities.MergeInto(vars, foo.CommandVars())
 
 ## Logging
-- Linux: slog handler writes to journald via cmd/app/logger_linux.go
-- macOS: slog uses TextHandler to stdout via cmd/app/logger_darwin.go
-- Standard log keys: app, version, pid, user, component, error
-- Set log level via CLI or settings
+- Use `applog.Info`, `applog.Warn`, `applog.Error`, `applog.Debug`, and `applog.Debug2` through `applog.Debug5` in service code.
+- `go-applog` owns platform logging setup; `go-app-runtime` owns settings, RPC commands, and DevLogBus publishing.
+- Runtime settings: `log_level`, `devlogbus_enabled`, and `devlogbus_endpoint`.
+- Operator commands: `logging status`, `logging level`, and the `devlogbus` commands in the logging command group.
+- Standard log keys include app, version, commit, buildDate, pid, user, and error.
 
 ## RPC
 - Unix domain socket: `/tmp/<APPNAME>-rpc.sock` (0660 perms)
@@ -87,7 +89,7 @@ The binary exposes a CLI with commands registered under cmd/app/commands. See in
   - go mod tidy, go vet, go test -race, and a Linux/amd64 build with ldflags
 - It also contains an optional Deploy configuration using rsync/SSH to a target host and a systemctl restart. Parameters to set per environment:
   - deploy.dest_user (default dsherwin)
-  - deploy.dest_host (e.g., monitor1.corp.spacelink.com)
+  - deploy.dest_host (e.g., service-host.example.internal)
   - deploy.dest_path (default /usr/local/%app.name%/%app.name%)
   - service.name (defaults to %app.name%)
 

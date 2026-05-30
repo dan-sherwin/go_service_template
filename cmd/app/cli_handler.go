@@ -27,7 +27,6 @@ var (
 )
 
 func processCLI() {
-	vars["logging_level"] = LoggingLevel
 	parser := kong.Must(&cliConfig,
 		kong.Name(consts.APPNAME),
 		kong.Description(consts.APPNAME+" application"),

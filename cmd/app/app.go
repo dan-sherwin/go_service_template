@@ -1,7 +1,7 @@
 package app
 
 import (
-	"log/slog"
+	"github.com/dan-sherwin/go-applog"
 	"os"
 	"os/signal"
 	"scm.dev.dsherwin.net/dsherwin/go_service_template/cmd/app/rpc"
@@ -23,10 +23,10 @@ var (
 )
 
 func startAppPump() {
-	slog.Debug("Starting signal handler")
+	applog.Debug("Starting signal handler")
 	go func() {
 		sigChan := <-shutdownSignals
-		slog.Info("Shutting down from signal", slog.String("signal", sigChan.String()))
+		applog.Info("Shutting down from signal", applog.String("signal", sigChan.String()))
 		shutdown()
 	}()
 }

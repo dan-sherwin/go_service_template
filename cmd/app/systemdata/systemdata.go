@@ -2,7 +2,7 @@ package systemdata
 
 import (
 	"fmt"
-	"log/slog"
+	"github.com/dan-sherwin/go-applog"
 	"runtime"
 	"time"
 
@@ -29,7 +29,7 @@ func GetSystemData() SystemData {
 }
 
 func StartSystemDataUpdates() {
-	slog.Debug("Starting system data updates")
+	applog.Debug("Starting system data updates")
 	go func() {
 		updateSystemData()
 		oneMinTicker := time.NewTicker(time.Minute)
@@ -41,7 +41,7 @@ func StartSystemDataUpdates() {
 			case <-oneMinTicker.C:
 				updateSystemData()
 			case <-stopChan:
-				slog.Info("Stopping system data updates")
+				applog.Info("Stopping system data updates")
 				return
 			}
 		}
@@ -60,7 +60,7 @@ func updateSystemData() {
 	runtime.ReadMemStats(&m)
 	cpuPerc, err := cpu.Percent(time.Duration(0), false)
 	if err != nil || len(cpuPerc) == 0 {
-		slog.Warn("cpu percent unavailable", slog.String("error", fmt.Sprintf("%v", err)))
+		applog.Warn("cpu percent unavailable", applog.String("error", fmt.Sprintf("%v", err)))
 	}
 	systemData.Alloc = m.Alloc
 	systemData.SystemAlloc = m.Sys

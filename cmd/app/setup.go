@@ -2,7 +2,6 @@ package app
 
 import (
 	"fmt"
-	"log/slog"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -13,12 +12,22 @@ import (
 	"scm.dev.dsherwin.net/dsherwin/go_service_template/cmd/app/systemdata"
 	"scm.dev.dsherwin.net/dsherwin/go_service_template/internal/foo"
 
+	appruntime "github.com/dan-sherwin/go-app-runtime"
 	"github.com/dan-sherwin/go-app-settings"
+	"github.com/dan-sherwin/go-applog"
 	"github.com/dan-sherwin/go-rest-api-server"
 	"github.com/dan-sherwin/go-utilities"
 )
 
 func init() {
+	appruntime.Setup(appruntime.SetupOptions{
+		AppName:     consts.APPNAME,
+		Version:     consts.Version,
+		Commit:      consts.Commit,
+		BuildDate:   consts.BuildDate,
+		RegisterRPC: rpc.RegisterName,
+		CallRPC:     rpc.Call,
+	})
 	app_settings.RegisterSetting(&app_settings.Setting{
 		SetFunc: func(s string) error {
 			if s == "" {
@@ -32,20 +41,6 @@ func init() {
 		},
 		Name:        "http_listening_address",
 		Description: "HTTP Listening address",
-	})
-	// Logging level setting
-	app_settings.RegisterSetting(&app_settings.Setting{
-		SetFunc: func(s string) error {
-			if s == "" {
-				return fmt.Errorf("log level cannot be empty")
-			}
-			LoggingLevel = s
-			initLogger()
-			return nil
-		},
-		GetFunc:     func() string { return LoggingLevel },
-		Name:        "log_level",
-		Description: "Logging level (debug|info|warn|error)",
 	})
 	// RPC socket path setting
 	app_settings.RegisterSetting(&app_settings.Setting{
@@ -64,44 +59,48 @@ func init() {
 
 func Setup() {
 	setWorkingDir()
-	slog.Debug("working directory set")
+	applog.Debug("working directory set")
 	if err := app_settings.Setup(consts.APPNAME+".db", app_settings.SettingsOptions{
 		RpcSocketPathToListRunningSettings: rpc.SocketPath,
 		KongVars:                           &vars,
 	}); err != nil {
-		slog.Error("Failed to setup settings", slog.String("error", err.Error()))
+		applog.Error("Failed to setup settings", applog.String("error", err.Error()))
 		os.Exit(1)
 	}
+	appruntime.ConfigureKongVars(&vars)
 	utilities.MergeInto(vars, foo.CommandVars())
 	processCLI()
-	LoggingLevel = cliConfig.Logging.Level
-	initLogger()
-	slog.Info("build info", slog.String("version", consts.Version), slog.String("commit", consts.Commit), slog.String("buildDate", consts.BuildDate))
+	if err := appruntime.SetLevel(cliConfig.Logging.Level); err != nil {
+		applog.Error("Failed to apply logging level", applog.String("level", cliConfig.Logging.Level), applog.String("error", err.Error()))
+		os.Exit(1)
+	}
+	appruntime.SetVerbose(cliConfig.Verbose)
+	applog.Info("build info", applog.String("version", consts.Version), applog.String("commit", consts.Commit), applog.String("buildDate", consts.BuildDate))
 	setupSystemdService()
 }
 
 func SetupDaemon() {
-	slog.Debug(consts.APPNAME + " app daemon setup")
+	applog.Debug(consts.APPNAME + " app daemon setup")
 	// Signals handled in startAppPump; avoid SIGKILL which cannot be trapped
 	signal.Notify(shutdownSignals, syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGINT, syscall.SIGHUP)
 	systemdata.StartSystemDataUpdates()
 	startAppPump()
 	if err := rpc.StartServer(); err != nil {
-		slog.Error("Failed to start RPC server", slog.String("error", err.Error()))
+		applog.Error("Failed to start RPC server", applog.String("error", err.Error()))
 		os.Exit(1)
 	}
-	slog.Info("daemon setup complete")
+	applog.Info("daemon setup complete")
 }
 
 func setWorkingDir() {
 	ex, err := os.Executable()
 	if err != nil {
-		slog.Error("cannot resolve executable path", slog.String("error", err.Error()))
+		applog.Error("cannot resolve executable path", applog.String("error", err.Error()))
 		os.Exit(1)
 	}
 	exPath := filepath.Dir(ex)
 	if err := os.Chdir(exPath); err != nil {
-		slog.Error("chdir failed", slog.String("path", exPath), slog.String("error", err.Error()))
+		applog.Error("chdir failed", applog.String("path", exPath), applog.String("error", err.Error()))
 		os.Exit(1)
 	}
 }
