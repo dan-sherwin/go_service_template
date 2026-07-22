@@ -30,6 +30,7 @@ What the bootstrap tool does:
 - Sets const APPNAME in cmd/app/consts/consts.go.
 - Rewrites README.md with app-specific starter content.
 - Updates GoLand run configurations under `dev/runConfigurations`.
+- Updates `dev/build-dev.sh` with the new application binary and settings name.
 - Updates .teamcity/settings.kts:
   - param("app.name", "...")
   - the project description ("CI for ...")
@@ -47,8 +48,14 @@ After bootstrapping:
 
 ## Building and running locally
 - macOS/Linux (dev):
-  go build -o ./dist/service_template ./cmd
-  ./dist/service_template run
+  ./dev/build-dev.sh
+  ./build/dev/service_template run
+
+  The first development build copies an existing `build/service_template.db`
+  to `build/dev/service_template.db` when the new settings database does not
+  exist. Native development binaries remain separate from production output,
+  and the script targets the current Go host regardless of ambient production
+  `GOOS` or `GOARCH` values.
 
 - Linux production build (as in TeamCity):
   GOOS=linux GOARCH=amd64 CGO_ENABLED=0 \
@@ -82,7 +89,7 @@ The binary exposes a CLI with commands registered under cmd/app/commands. See in
 
 ## Local quality gate
 - `dev/ci-local.sh` runs the local validation pass: `go mod tidy`, `go build`, `go vet`, `go test -race`, `golangci-lint`, `govulncheck`, and `gofmt -s`.
-- The script pins the local Go toolchain default to `go1.26.2`, matching the latest Go release at the time this template was updated.
+- The script pins the local Go toolchain default to `go1.26.5`, matching the minimum patched Go release required by the vulnerability gate.
 
 ## TeamCity CI/CD
 - .teamcity/settings.kts contains a Build configuration:

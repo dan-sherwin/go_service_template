@@ -131,12 +131,15 @@ func main() {
 	// 6) Update GoLand run configurations under dev/runConfigurations
 	updateRunConfigurations(cwd, oldModule, newModule, newApp)
 
-	// 7) Best-effort: run `go mod tidy` to settle dependencies after rewrite
+	// 7) Update the native development build script with the new app name
+	updateDevBuildScript(cwd, newApp)
+
+	// 8) Best-effort: run `go mod tidy` to settle dependencies after rewrite
 	if err := runGoModTidy(cwd); err != nil {
 		fmt.Println("Note: go mod tidy failed:", err)
 	}
 
-	// 8) Update .gormdb2struct.toml OutPackagePath to the correct module path
+	// 9) Update .gormdb2struct.toml OutPackagePath to the correct module path
 	gormConf := filepath.Join(cwd, ".gormdb2struct.toml")
 	if b, err := os.ReadFile(gormConf); err == nil {
 		orig := string(b)
@@ -155,7 +158,7 @@ func main() {
 		}
 	}
 
-	// 9) Update ci-local.sh and .golangci.yml if they exist
+	// 10) Update ci-local.sh and .golangci.yml if they exist
 	updateCIConfig(cwd, oldModule, newModule)
 
 	fmt.Println("Bootstrap completed successfully.")
@@ -353,13 +356,16 @@ func updateReadme(cwd, oldModule, newModule, newApp string) {
 	b.WriteString("## Quick start\n")
 	b.WriteString("Build and run locally:\n\n")
 	b.WriteString("```\n")
-	b.WriteString("go build -o ./dist/")
-	b.WriteString(appName)
-	b.WriteString(" ./cmd\n")
-	b.WriteString("./dist/")
+	b.WriteString("./dev/build-dev.sh\n")
+	b.WriteString("./build/dev/")
 	b.WriteString(appName)
 	b.WriteString(" run\n")
 	b.WriteString("```\n\n")
+	b.WriteString("Native development binaries and settings live under build/dev, separate from production output. The first development build copies an existing build/")
+	b.WriteString(appName)
+	b.WriteString(".db when build/dev/")
+	b.WriteString(appName)
+	b.WriteString(".db does not exist. The script targets the current Go host regardless of ambient production GOOS or GOARCH values.\n\n")
 
 	b.WriteString("Linux production build example:\n\n")
 	b.WriteString("```\n")
@@ -407,7 +413,7 @@ func updateReadme(cwd, oldModule, newModule, newApp string) {
 
 	b.WriteString("## Local quality gate\n")
 	b.WriteString("- Run `./dev/ci-local.sh` for the local validation pass: go mod tidy, go build, go vet, go test -race, golangci-lint, govulncheck, and gofmt -s\n")
-	b.WriteString("- The script pins the local Go toolchain default to go1.26.2\n\n")
+	b.WriteString("- The script pins the local Go toolchain default to go1.26.5, the minimum patched release required by the vulnerability gate\n\n")
 
 	content := b.String()
 	if err := os.WriteFile(readmePath, []byte(content), 0o644); err == nil {
@@ -469,12 +475,34 @@ func updateRunConfigurations(cwd, oldModule, newModule, newApp string) {
 			repl = reOldPkg.ReplaceAllString(repl, newModule)
 		}
 
-		// 3) Update output binary name for main app run config: build/service_template -> build/<appName>
-		repl = strings.ReplaceAll(repl, "build/service_template", "build/"+appName)
+		// 3) Update output binary name for main app run config:
+		// build/dev/service_template -> build/dev/<appName>
+		repl = strings.ReplaceAll(repl, "build/dev/service_template", "build/dev/"+appName)
 
 		if repl != orig {
 			_ = os.WriteFile(path, []byte(repl), 0o644)
 			fmt.Println("Updated run configuration:", filepath.Join("dev/runConfigurations", name))
+		}
+	}
+}
+
+func updateDevBuildScript(cwd, newApp string) {
+	if newApp == "" {
+		return
+	}
+	path := filepath.Join(cwd, "dev", "build-dev.sh")
+	b, err := os.ReadFile(path)
+	if err != nil {
+		return
+	}
+	orig := string(b)
+	repl := regexp.MustCompile(`(?m)^app_name="[^"]*"$`).ReplaceAllString(
+		orig,
+		fmt.Sprintf(`app_name="%s"`, newApp),
+	)
+	if repl != orig {
+		if err := os.WriteFile(path, []byte(repl), 0o755); err == nil {
+			fmt.Println("Updated dev/build-dev.sh")
 		}
 	}
 }

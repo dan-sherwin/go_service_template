@@ -2,7 +2,7 @@
 set -euo pipefail
 trap "rm -f coverage.out" EXIT
 
-export GOTOOLCHAIN="${GOTOOLCHAIN:-go1.26.2}"
+export GOTOOLCHAIN="${GOTOOLCHAIN:-go1.26.5}"
 
 # Ensure tools exist
 command -v golangci-lint >/dev/null 2>&1 || go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
@@ -42,3 +42,8 @@ govulncheck -test ./...
 
 # 5) gofmt test
 test -z "$(gofmt -s -l .)" || { echo "gofmt needed"; exit 1; }
+
+# 6) Development shell contract
+bash -n dev/build-dev.sh
+command -v shellcheck >/dev/null 2>&1 || { echo "shellcheck is required"; exit 1; }
+shellcheck dev/build-dev.sh
